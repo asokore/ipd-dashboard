@@ -7,7 +7,15 @@
 <title>Investment Property Dashboard — Barbados-Acquisition Pipeline</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
-  :root{--bg:#0f1620;--panel:#17212e;--panel2:#1e2b3a;--line:#2b3a4d;--ink:#e8eef5;--mut:#93a4b8;--acc:#4aa3ff;--green:#2fbf71;--amber:#f0a83c;--red:#e5573f;--unk:#8899aa;}
+  /* RAG hues are a validated colour-blind-safe status triad (worst-pair deuteranopia
+     ΔE 22.9 vs the 12 target, checked with the dataviz skill's validator against the
+     #17212e card surface). They are NOT hand-picked and must not be "prettified" without
+     re-validating — the aqua-shifted green survives CVD far better than a yellow-green.
+     Status is always reinforced with an icon + word (see RAGBADGE), never colour alone. */
+  :root{--bg:#0f1620;--panel:#17212e;--panel2:#1e2b3a;--line:#2b3a4d;--ink:#e8eef5;--mut:#93a4b8;--acc:#4aa3ff;--green:#2fbf71;--amber:#f0a83c;--red:#e5573f;--unk:#8899aa;
+    --r-sm:7px;--r-md:10px;--r-lg:14px;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 3px 12px rgba(0,0,0,.22);
+    --shadow-lg:-10px 0 40px rgba(0,0,0,.5);}
   *{box-sizing:border-box}
   body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
   header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(180deg,#13202e,#0f1620)}
@@ -15,12 +23,13 @@
   header .sub{color:var(--mut);font-size:12px}
   .seedflag{margin-left:auto;background:#3a2b12;color:#f0a83c;border:1px solid #6b4d1f;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 20px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .kpi{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--shadow)}
   .kpi .lab{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-  .kpi .val{font-size:22px;font-weight:700;margin-top:4px}
+  .kpi .val{font-size:23px;font-weight:700;margin-top:4px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
   .kpi .sub{font-size:11px;color:var(--mut)}
+  .kpi.accent{border-color:rgba(47,191,113,.45);box-shadow:var(--shadow),inset 0 0 0 1px rgba(47,191,113,.12)}
   .wrap{display:grid;grid-template-columns:300px 1fr;gap:14px;padding:0 20px 20px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow)}
   .card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
   label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
   select,input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:7px 8px;font-size:13px}
@@ -31,15 +40,19 @@
   .tab.active{background:var(--acc);color:#04121f;border-color:var(--acc);font-weight:600}
   #map{height:460px;border-radius:10px;border:1px solid var(--line)}
   .maptools{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-  .maptools .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-  .maptools .seg button{background:var(--panel2);color:var(--mut);border:0;padding:6px 10px;cursor:pointer;font-size:12px}
-  .maptools .seg button.active{background:var(--acc);color:#04121f;font-weight:600}
+  .seg{display:flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--mut);border:0;padding:6px 10px;cursor:pointer;font-size:12px}
+  .seg button.active{background:var(--acc);color:#04121f;font-weight:600}
+  .charthead{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .charthead h3{margin:0;flex:1}
+  .charthead .seg button{padding:5px 9px;font-size:11px}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
   th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel);z-index:1}
   td.num,th.num{text-align:right}
   .tblwrap{max-height:340px;overflow:auto;border-radius:8px}
-  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .tbl-empty{text-align:center;padding:26px 14px;color:var(--mut);font-size:12.5px;white-space:normal}
   .pill.green{background:rgba(47,191,113,.15);color:var(--green);border:1px solid rgba(47,191,113,.4)}
   .pill.amber{background:rgba(240,168,60,.15);color:var(--amber);border:1px solid rgba(240,168,60,.4)}
   .pill.red{background:rgba(229,87,63,.15);color:var(--red);border:1px solid rgba(229,87,63,.4)}
@@ -174,7 +187,7 @@
         </div>
         <div class="row2">
           <div><label for="c-area">Area (sqft)</label><input id="c-area" type="number" value="1200"/></div>
-          <div><label for="c-reno">Reno intensity</label><select id="c-reno"><option value="cosmetic">Cosmetic ($40/sqft)</option><option value="moderate" selected>Moderate ($75/sqft)</option><option value="gut">Gut ($130/sqft)</option></select></div>
+          <div><label for="c-reno">Reno intensity</label><select id="c-reno"><option value="cosmetic">Cosmetic</option><option value="moderate" selected>Moderate</option><option value="gut">Gut</option></select></div>
         </div>
         <label for="c-rent">Monthly rent if kept/sold to investor (US$, optional)</label>
         <input id="c-rent" type="number" placeholder="e.g. 1800"/>
@@ -210,8 +223,15 @@
 <div class="wrap" style="grid-template-columns:1fr">
   <div class="grid2">
     <div class="card">
-      <h3>Projected profit by listing (filtered)</h3>
+      <div class="charthead">
+        <h3 id="chart-title">Capital efficiency — return vs. profit</h3>
+        <div class="seg" id="chartseg">
+          <button data-chart="quadrant" class="active">Quadrant</button>
+          <button data-chart="bar">Top profit</button>
+        </div>
+      </div>
       <div class="chartbox"><canvas id="chart"></canvas></div>
+      <div class="fcount" id="chart-note"></div>
     </div>
     <div class="card">
       <h3>Pipeline table <span style="color:var(--mut);font-weight:400;text-transform:none">— ★ to watch; click a row for details &amp; source; click headers to sort</span></h3>
@@ -324,6 +344,14 @@ function scoreDeal(arv,price,area,reno,financed,monthlyRent,rentHaircutPct){
 </script>
 <script id="app">
 var COL={green:'#2fbf71',amber:'#f0a83c',red:'#e5573f',unknown:'#8899aa'};
+// Redundant status encoding (dataviz skill: status is NEVER colour alone). Every RAG
+// mark carries an icon + word so it survives grayscale / colour-blindness / a mono print.
+var RAGBADGE={green:{i:'✓',t:'Pass'},amber:{i:'~',t:'Marginal'},red:{i:'✕',t:'Fail'},unknown:{i:'?',t:'No data'}};
+function ragPill(rag){var b=RAGBADGE[rag]||RAGBADGE.unknown;return '<span class="pill '+rag+'">'+b.i+' '+b.t+'</span>';}
+// Shared chart chrome — one source of truth for every Chart.js canvas + the map/2D
+// contexts, so all charts read as one system (recessive grid, muted ink, UI font).
+var CHROME={ink:'#e8eef5',muted:'#93a4b8',grid:'rgba(255,255,255,0.06)',baseline:'rgba(255,255,255,0.16)',
+  surface:'#17212e',font:"-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"};
 var _ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function esc(s){return s==null?'':String(s).replace(/[&<>"']/g,function(m){return _ESC[m];});}
 function safeUrl(u){return (typeof u==='string'&&/^https?:\/\//i.test(u))?u:'';}
@@ -461,13 +489,19 @@ function renderTable(f){
   // rather than silently truncating - a hidden cap would read as "that's all there is",
   // which is exactly the scoped-search failure NN/g warns about.
   var TABLE_CAP=250, rows=all.slice(0,TABLE_CAP);
+  if(!all.length){
+    tb.innerHTML='<tr><td colspan="'+COLS.length+'" class="tbl-empty">No listings match the current filters — <button class="linkbtn" style="margin:0" onclick="resetFilters()">reset filters</button> or widen your search.</td></tr>';
+    document.getElementById('tbl-cap').textContent='';
+    Array.prototype.forEach.call(th.querySelectorAll('th'),function(h){h.onclick=function(){var k=h.getAttribute('data-k');if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}render();};});
+    return;
+  }
   tb.innerHTML=rows.map(function(l){var d=l.deal;return '<tr data-id="'+esc(l.id)+'" class="'+(HIDDEN.has(l.id)?'seen':'')+'">'+
     '<td><button class="star'+(WATCH.has(l.id)?' on':'')+'" data-star="'+esc(l.id)+'" aria-label="toggle watchlist" title="watchlist">'+(WATCH.has(l.id)?'★':'☆')+'</button>'+'<button class="hidebtn" data-hide="'+esc(l.id)+'" aria-label="'+(HIDDEN.has(l.id)?'restore listing':'hide listing')+'" title="'+(HIDDEN.has(l.id)?'restore':'rule out / hide')+'">'+(HIDDEN.has(l.id)?'↺':'✕')+'</button></td>'+
     '<td>'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</td>'+
     '<td>'+esc(l.parish)+'</td><td>'+esc((l.type||'').replace(/_/g,' '))+'</td>'+
     '<td class="num">'+U(l.price_usd)+'</td><td class="num">'+U(d.arv_usd)+'</td><td class="num">'+U(d.reno_cost_usd)+'</td>'+
     '<td class="num">'+U(d.profit_base_usd)+'</td><td class="num">'+PC(d.roi_annual_pct)+'</td><td class="num">'+PC(d.discount_to_arv_pct)+'</td>'+
-    '<td><span class="pill '+d.rag+'">'+d.rag+'</span> <span class="chan">'+((l.distressed&&l.distressed.channel!=='none')?esc(l.distressed.channel.replace(/_/g,' ')):'')+'</span></td></tr>';}).join('');
+    '<td>'+ragPill(d.rag)+' <span class="chan">'+((l.distressed&&l.distressed.channel!=='none')?esc(l.distressed.channel.replace(/_/g,' ')):'')+'</span></td></tr>';}).join('');
   var capEl=document.getElementById('tbl-cap');
   if(capEl){capEl.textContent=all.length>TABLE_CAP
     ? 'Showing the top '+TABLE_CAP+' of '+all.length.toLocaleString()+' matching listings, by '+
@@ -492,13 +526,19 @@ function metricVal(l,m){var d=l.deal; if(m==='profit')return d.profit_base_usd; 
 function legend(t){document.getElementById('maplegend').textContent=t;}
 function drawMarkers(f){
   markerLayer.clearLayers();markerById={};
+  if(!f.length){legend('No listings match the current filters — adjust filters or search.');return;}
   f.forEach(function(l){var c=coords(l);if(!c)return;
-    var m=L.circleMarker(c,{radius:8,color:'#0c141d',weight:1,fillColor:COL[l.deal.rag],fillOpacity:.9});
+    // Redundant encoding on pins (not colour alone): PASS deals are larger with a bright
+    // halo so the actionable stock pops at a glance; unknown/data-gap pins recede at lower
+    // opacity. Size + ring back up the (already CVD-safe) fill hue.
+    var rag=l.deal.rag,isPass=rag==='green';
+    var m=L.circleMarker(c,{radius:isPass?8:6,color:isPass?'#dff5e8':'#0c141d',weight:isPass?1.6:1,
+      fillColor:COL[rag],fillOpacity:rag==='unknown'?.5:.9});
     // Lazy popup: Leaflet calls this only when the pin is actually opened. Building
     // ~2,940 popup HTML strings up front to serve the one the user clicks is pure waste.
     m.bindPopup(function(){return '<b>'+esc(l.title)+'</b><br>'+esc(l.parish)+' • '+esc((l.type||'').replace(/_/g,' '))+'<br>Ask '+U(l.price_usd)+' → ARV '+U(l.deal.arv_usd)+
       '<br><b>Profit '+U(l.deal.profit_base_usd)+'</b> ('+PC(l.deal.discount_to_arv_pct)+' disc, ROI/yr '+PC(l.deal.roi_annual_pct)+')'+
-      '<br>Status: <b style="color:'+COL[l.deal.rag]+'">'+l.deal.rag.toUpperCase()+'</b><br><i>click pin for details &amp; source</i>';});
+      '<br>Status: <b style="color:'+COL[l.deal.rag]+'">'+RAGBADGE[l.deal.rag].i+' '+RAGBADGE[l.deal.rag].t+'</b><br><i>click pin for details &amp; source</i>';});
     m.on('click',function(){openDetail(l.id);});
     m.addTo(markerLayer);markerById[l.id]=m;});
   legend('Pins: green pass / amber / red fail / grey insufficient data'+(f.some(function(l){return l.lat==null;})?' • pins without coordinates shown near parish centre':''));
@@ -509,7 +549,10 @@ function drawHeat(f){var m=document.getElementById('heatmetric').value;
   var vals=pts.map(function(p){return p[2]});
   var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals),range=(max-min)||1;
   var norm=pts.map(function(p){return[p[0],p[1],0.15+0.85*((p[2]-min)/range)];});
-  heatLayer=L.heatLayer(norm,{radius:35,blur:25,maxZoom:13,gradient:{0.2:'#3a6',0.5:'#fd3',0.8:'#f83',1:'#e33'}}).addTo(map);
+  // CVD-safe perceptually-uniform ramp (inferno), replacing a red→green gradient that
+  // was unreadable under deuteranopia. Dark-purple (low) → magenta → orange → pale
+  // yellow (high) reads as one ordered "hotter = higher" scale for every colour-vision type.
+  heatLayer=L.heatLayer(norm,{radius:35,blur:25,maxZoom:13,gradient:{0.2:'#420a68',0.4:'#932667',0.6:'#dd513a',0.8:'#fca50a',1:'#fcffa4'}}).addTo(map);
   legend('Heat: '+document.querySelector('#heatmetric option:checked').textContent+' — relative within current view (brighter = higher)');
 }
 function ppsqftColor(v){ if(v==null)return '#33455a'; var t=Math.min(1,Math.max(0,(v-150)/(360-150)));
@@ -676,18 +719,98 @@ document.addEventListener('keydown',function(e){
     else if(!dr.contains(document.activeElement)){first.focus();e.preventDefault();}
   }
 });
-var chart=null;
-function renderChart(f){
+var chart=null,chartMode='quadrant';
+// --- Shared Chart.js theme (applies CHROME so every canvas reads as one system) ---
+function baseChartOpts(){return {responsive:true,maintainAspectRatio:false,
+  layout:{padding:{top:8,right:10,bottom:2,left:2}},animation:{duration:400}};}
+function tooltipCfg(callbacks){return {backgroundColor:'#0d1622',borderColor:CHROME.baseline,borderWidth:1,
+  titleColor:CHROME.ink,bodyColor:CHROME.muted,padding:10,cornerRadius:8,displayColors:false,
+  titleFont:{family:CHROME.font,weight:'700',size:12},bodyFont:{family:CHROME.font,size:11.5},
+  callbacks:callbacks||{}};}
+function linScale(title,cb){return {title:{display:!!title,text:title||'',color:CHROME.muted,font:{family:CHROME.font,size:11}},
+  ticks:{color:CHROME.muted,font:{family:CHROME.font,size:10},callback:cb},grid:{color:CHROME.grid},border:{color:CHROME.baseline}};}
+function chartEmpty(msg){if(chart){chart.destroy();chart=null;}
+  var cv=document.getElementById('chart'),cx=cv.getContext('2d');
+  cx.clearRect(0,0,cv.width,cv.height);cx.fillStyle=CHROME.muted;cx.font='13px '+CHROME.font;cx.textAlign='center';
+  cx.fillText(msg,cv.width/2,cv.height/2);}
+
+// Quadrant reference-line + corner-label plugin (no external annotation lib). Draws the
+// two deal-criteria thresholds and names each cell so the chart is prescriptive, not just
+// a scatter: where a point lands IS the screening call.
+var quadrantPlugin={id:'quadrant',
+  beforeDatasetsDraw:function(c){var o=c.options.plugins.quadrant;if(!o||!o.on)return;
+    var ctx=c.ctx,xa=c.scales.x,ya=c.scales.y,px=xa.getPixelForValue(o.xLine),py=ya.getPixelForValue(o.yLine);
+    ctx.save();ctx.strokeStyle='rgba(255,255,255,0.30)';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+    if(px>=xa.left&&px<=xa.right){ctx.beginPath();ctx.moveTo(px,ya.top);ctx.lineTo(px,ya.bottom);ctx.stroke();}
+    if(py>=ya.top&&py<=ya.bottom){ctx.beginPath();ctx.moveTo(xa.left,py);ctx.lineTo(xa.right,py);ctx.stroke();}
+    ctx.restore();},
+  afterDatasetsDraw:function(c){var o=c.options.plugins.quadrant;if(!o||!o.on)return;
+    var ctx=c.ctx,xa=c.scales.x,ya=c.scales.y,pad=7;
+    ctx.save();ctx.font='700 10px '+CHROME.font;ctx.fillStyle='rgba(147,164,184,0.85)';
+    ctx.textAlign='right';ctx.textBaseline='top';   ctx.fillText('▲ PRIORITY',xa.right-pad,ya.top+pad);
+    ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('EFFICIENT · SMALL',xa.right-pad,ya.bottom-pad);
+    ctx.textAlign='left'; ctx.textBaseline='top';   ctx.fillText('CAPITAL-HEAVY',xa.left+pad,ya.top+pad);
+    ctx.textAlign='left'; ctx.textBaseline='bottom';ctx.fillText('PASS',xa.left+pad,ya.bottom-pad);
+    ctx.restore();}};
+
+function renderChart(f){return chartMode==='bar'?renderBar(f):renderQuadrant(f);}
+
+// FLAGSHIP: capital-efficiency quadrant. x = annualised ROI, y = projected profit; the two
+// dashed lines are the hard deal floors (20% ROI, $50k). Exposes the tradeoff the old
+// single-metric bar hid: a tiny deal with a huge ROI% and a giant cheque with a thin return
+// land in different cells, and only the top-right cell is an unqualified buy.
+function renderQuadrant(f){
+  var rows=f.filter(function(l){return l.deal.profit_base_usd!=null&&l.deal.roi_annual_pct!=null;});
+  document.getElementById('chart-title').textContent='Capital efficiency — return vs. profit';
+  document.getElementById('chart-note').innerHTML=rows.length
+    ? 'Each dot is a scored listing · x = annualised ROI, y = projected profit · dashed lines = the '+
+      PC(Math.round(CFG.TARGET_ROI*100))+' ROI and '+U(CFG.TARGET)+' floors · <b>click a dot</b> for details'
+    : '';
+  if(!rows.length){chartEmpty('No scored listings match the current filters');return;}
+  var pts=rows.map(function(l){return {x:l.deal.roi_annual_pct,y:l.deal.profit_base_usd,_id:l.id,_t:l.title,_rag:l.deal.rag};});
+  var colors=rows.map(function(l){return COL[l.deal.rag];});
+  var ctx=document.getElementById('chart').getContext('2d');
+  if(chart)chart.destroy();
+  chart=new Chart(ctx,{type:'scatter',
+    data:{datasets:[{data:pts,pointBackgroundColor:colors,pointBorderColor:'rgba(12,20,29,0.55)',
+      pointBorderWidth:0.5,pointRadius:4,pointHoverRadius:7,pointHoverBorderColor:'#fff',pointHoverBorderWidth:1.5}]},
+    options:Object.assign(baseChartOpts(),{
+      onClick:function(e,els){if(els&&els.length){var p=pts[els[0].index];if(p)openDetail(p._id);}},
+      onHover:function(e,els){if(e.native)e.native.target.style.cursor=els.length?'pointer':'default';},
+      plugins:{legend:{display:false},quadrant:{on:true,xLine:CFG.TARGET_ROI*100,yLine:CFG.TARGET},
+        tooltip:tooltipCfg({title:function(c){return c[0].raw._t;},
+          label:function(c){var r=c.raw;return [RAGBADGE[r._rag].i+' '+RAGBADGE[r._rag].t,'ROI/yr '+PC(r.x),'Profit '+U(r.y)];}})},
+      scales:{x:linScale('Annualised ROI %',function(v){return v+'%';}),
+              y:linScale('Projected profit (US$)',function(v){return Uk(v);})}}),
+    plugins:[quadrantPlugin]});
+}
+
+// Secondary view: top-14 by absolute profit, restyled to the shared theme with rounded
+// data-ends and clickable bars. Kept because "biggest cheque" is still a question people ask.
+function renderBar(f){
   var rows=f.filter(function(l){return l.deal.profit_base_usd!=null;})
             .sort(function(a,b){return b.deal.profit_base_usd-a.deal.profit_base_usd;}).slice(0,14);
+  document.getElementById('chart-title').textContent='Top projected profit (filtered)';
+  document.getElementById('chart-note').innerHTML=rows.length?'Top 14 by absolute profit · <b>click a bar</b> for details':'';
+  if(!rows.length){chartEmpty('No scored listings match the current filters');return;}
   var ctx=document.getElementById('chart').getContext('2d');
-  var cfg={type:'bar',data:{labels:rows.map(function(l){return (l.locality||l.parish.replace('Saint','St'))+' '+Uk(l.price_usd);}),
-      datasets:[{data:rows.map(function(l){return l.deal.profit_base_usd;}),backgroundColor:rows.map(function(l){return COL[l.deal.rag];})}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return U(c.raw);},title:function(c){return rows[c[0].dataIndex].title;}}}},
-      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#93a4b8',callback:function(v){return Uk(v);}},grid:{color:'#22303f'}}},
-      responsive:true,maintainAspectRatio:false}};
-  if(chart)chart.destroy(); chart=new Chart(ctx,cfg);
+  if(chart)chart.destroy();
+  chart=new Chart(ctx,{type:'bar',
+    data:{labels:rows.map(function(l){return (l.locality||l.parish.replace('Saint','St'))+' '+Uk(l.price_usd);}),
+      datasets:[{data:rows.map(function(l){return l.deal.profit_base_usd;}),
+        backgroundColor:rows.map(function(l){return COL[l.deal.rag];}),borderRadius:4,borderSkipped:false,maxBarThickness:34}]},
+    options:Object.assign(baseChartOpts(),{
+      onClick:function(e,els){if(els&&els.length){var l=rows[els[0].index];if(l)openDetail(l.id);}},
+      onHover:function(e,els){if(e.native)e.native.target.style.cursor=els.length?'pointer':'default';},
+      plugins:{legend:{display:false},
+        tooltip:tooltipCfg({label:function(c){return U(c.raw);},title:function(c){return rows[c[0].dataIndex].title;}})},
+      scales:{x:{ticks:{color:CHROME.muted,font:{family:CHROME.font,size:10}},grid:{display:false},border:{color:CHROME.baseline}},
+              y:linScale('',function(v){return Uk(v);})}})});
 }
+Array.prototype.forEach.call(document.querySelectorAll('#chartseg button'),function(b){b.onclick=function(){
+  chartMode=b.getAttribute('data-chart');
+  Array.prototype.forEach.call(document.querySelectorAll('#chartseg button'),function(x){x.classList.toggle('active',x===b);});
+  renderChart(getFiltered());};});
 function runCalc(){
   var arv=+document.getElementById('c-arv').value,price=+document.getElementById('c-price').value,
       area=+document.getElementById('c-area').value,reno=document.getElementById('c-reno').value,
@@ -786,7 +909,13 @@ Array.prototype.forEach.call(document.querySelectorAll('#layerseg button'),funct
 document.getElementById('heatmetric').addEventListener('change',function(){if(curLayer==='heat')applyLayer(getFiltered());});
 Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(t){t.onclick=function(){Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(x){x.classList.remove('active');});t.classList.add('active');document.getElementById('pane-filters').style.display=t.getAttribute('data-pane')==='filters'?'':'none';document.getElementById('pane-calc').style.display=t.getAttribute('data-pane')==='calc'?'':'none';};});
 ['c-arv','c-price','c-area','c-reno','c-fin','c-rent','c-tenanted'].forEach(function(id){document.getElementById(id).addEventListener('input',runCalc);document.getElementById(id).addEventListener('change',runCalc);});
-document.getElementById('foot').innerHTML='<b>Data:</b> '+(DATA.seed?'SEED / illustrative — 6 REAL asking-price comps (marked COMP) + 8 CONSTRUCTED distressed examples at plausible channel discounts. Replace with scraped data (<code>scrapers/refresh.py</code>).':'live')+' Generated '+esc(DATA.generated_at||'—')+'. <b>Model:</b> selling = exact PTT (2.5% over US$75k = BBD 150k exempt) + stamp 1% + agent 5.9% incl VAT + legal 1.76% (~10.4% at a $250k exit); reno $40/$75/$130 per sqft (+17% contingency; cosmetic = researched band floor — treat green as a screen, get a QS quote); holding $1,600/mo × 4/6/8; target ≥ US$50k; stress = ARV −10%, reno +20%, +3 months (incl. interest). GREY = insufficient data (never a confident green on missing inputs). No CGT in Barbados. BBD = USD × 2. See <code>docs/02-deal-economics-model.md</code>.';
+// Reno-intensity labels are GENERATED from CFG.RENO_PSF, never hardcoded - the model
+// constant is the single source of truth, so the dropdown can't drift from the engine
+// again (it previously showed $40/$75/$130 while the model used $50/$100/$170).
+Array.prototype.forEach.call(document.querySelectorAll('#c-reno option'),function(o){
+  var psf=CFG.RENO_PSF[o.value]; if(psf!=null)o.textContent=o.textContent.replace(/\s*\(.*\)\s*$/,'')+' ($'+psf+'/sqft)';
+});
+document.getElementById('foot').innerHTML='<b>Data:</b> '+(DATA.seed?'SEED / illustrative — 6 REAL asking-price comps (marked COMP) + 8 CONSTRUCTED distressed examples at plausible channel discounts. Replace with scraped data (<code>scrapers/refresh.py</code>).':'live')+' Generated '+esc(DATA.generated_at||'—')+'. <b>Model:</b> selling = exact PTT (2.5% over US$75k = BBD 150k exempt) + stamp 1% + agent 5.9% incl VAT + legal 1.76% (~10.4% at a $250k exit); reno $'+CFG.RENO_PSF.cosmetic+'/$'+CFG.RENO_PSF.moderate+'/$'+CFG.RENO_PSF.gut+' per sqft (+'+Math.round(CFG.CONT*100)+'% contingency; cosmetic = researched band floor — treat green as a screen, get a QS quote); holding $'+_nf.format(CFG.HPM)+'/mo × '+CFG.HOLD.cosmetic+'/'+CFG.HOLD.moderate+'/'+CFG.HOLD.gut+'; target ≥ US$'+_nf.format(CFG.TARGET)+' and ≥ '+Math.round(CFG.TARGET_ROI*100)+'% ROI; stress = ARV −10%, reno +20%, +3 months (incl. interest). GREY = insufficient data (never a confident green on missing inputs). No CGT in Barbados. BBD = USD × 2. See <code>docs/02-deal-economics-model.md</code>.';
 render();runCalc();
 
 // === Market Trends (historical, from scrapers/market_stats.py snapshots) ===
@@ -830,22 +959,23 @@ function renderTrends(){
   var labels=MKT.map(function(h){return h.date;});
   var ctx1=document.getElementById('trendchart1').getContext('2d');
   if(trendChart1)trendChart1.destroy();
+  var yCount={beginAtZero:true,ticks:{color:CHROME.muted,font:{family:CHROME.font,size:10}},grid:{color:CHROME.grid},border:{color:CHROME.baseline}};
+  var xDate={ticks:{color:CHROME.muted,font:{family:CHROME.font,size:10}},grid:{display:false},border:{color:CHROME.baseline}};
+  var legendCfg={labels:{color:CHROME.muted,usePointStyle:true,boxWidth:8,font:{family:CHROME.font,size:11}}};
   trendChart1=new Chart(ctx1,{type:'line',data:{labels:labels,datasets:[
-      {label:'Active sale listings',data:MKT.map(function(h){return h.total_active_sale_listings;}),borderColor:'#4aa3ff',backgroundColor:'#4aa3ff',tension:.25},
-      {label:'Active rental listings',data:MKT.map(function(h){return h.total_active_rental_listings;}),borderColor:'#f0a83c',backgroundColor:'#f0a83c',tension:.25}
-    ]},options:{plugins:{legend:{labels:{color:'#93a4b8'}}},
-      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#93a4b8'},grid:{color:'#22303f'}}},
-      responsive:true,maintainAspectRatio:false}});
+      {label:'Active sale listings',data:MKT.map(function(h){return h.total_active_sale_listings;}),borderColor:'#4aa3ff',backgroundColor:'rgba(74,163,255,0.12)',fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+      {label:'Active rental listings',data:MKT.map(function(h){return h.total_active_rental_listings;}),borderColor:'#f0a83c',backgroundColor:'rgba(240,168,60,0.10)',fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}
+    ]},options:Object.assign(baseChartOpts(),{interaction:{mode:'index',intersect:false},
+      plugins:{legend:legendCfg,tooltip:tooltipCfg()},scales:{x:xDate,y:yCount}})});
 
   if(trendChart2)trendChart2.destroy();
   var ctx2=document.getElementById('trendchart2').getContext('2d');
   var ragKeys=[['green','#2fbf71'],['amber','#f0a83c'],['red','#e5573f'],['unknown','#8899aa']];
   trendChart2=new Chart(ctx2,{type:'line',data:{labels:labels,datasets:ragKeys.map(function(rk){return {
-      label:rk[0],data:MKT.map(function(h){return (h.rag_counts&&h.rag_counts[rk[0]])||0;}),
-      borderColor:rk[1],backgroundColor:rk[1]+'55',fill:true,stack:'rag',tension:.2,pointRadius:2};})},
-    options:{plugins:{legend:{labels:{color:'#93a4b8'}}},
-      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{color:'#93a4b8'},grid:{color:'#22303f'}}},
-      responsive:true,maintainAspectRatio:false}});
+      label:(RAGBADGE[rk[0]]||{t:rk[0]}).t,data:MKT.map(function(h){return (h.rag_counts&&h.rag_counts[rk[0]])||0;}),
+      borderColor:rk[1],backgroundColor:rk[1]+'55',fill:true,stack:'rag',tension:.25,pointRadius:0,pointHoverRadius:4,borderWidth:1.5};})},
+    options:Object.assign(baseChartOpts(),{interaction:{mode:'index',intersect:false},
+      plugins:{legend:legendCfg,tooltip:tooltipCfg()},scales:{x:xDate,y:Object.assign({stacked:true},yCount)}})});
 }
 </script>
 </body>
