@@ -88,7 +88,10 @@
   .drawer .dhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start;position:sticky;top:0;background:var(--panel);z-index:2}
   .drawer .dhead h2{font-size:16px;margin:0;line-height:1.3}
   .drawer .close{margin-left:auto;cursor:pointer;color:var(--mut);font-size:24px;line-height:1;background:none;border:0}
-  .drawer .close:focus-visible,.star:focus-visible,button:focus-visible,a.srcbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .drawer .printbtn{cursor:pointer;color:var(--mut);font-size:16px;line-height:1;background:none;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 8px;margin-left:auto}
+  .drawer .printbtn:hover{color:var(--ink);border-color:var(--acc)}
+  .printonly{display:none}
+  .drawer .close:focus-visible,.star:focus-visible,button:focus-visible,a.srcbtn:focus-visible,.printbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
   .drawer .body{padding:14px 16px}
   .gallery{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px}
   .gallery img{height:120px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto;cursor:zoom-in}
@@ -119,6 +122,48 @@
   .trendtbl th:first-child,.trendtbl td:first-child{text-align:left}
   .trendempty{color:var(--mut);font-size:12px;padding:10px 0}
   @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.wrap{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.trendkpis{grid-template-columns:repeat(2,1fr)}}
+
+  /* --- Mobile (<=700px): card transform for the pipeline table + Map<->List toggle ---
+     Same markup/data as desktop - only presentation changes, so there is no second
+     render path to fall out of sync. Priority fields stay visible (listing, price,
+     profit, ROI/yr, status); secondary columns (parish detail, type, ARV, reno, disc%)
+     move into the detail drawer on tap, per the research on mobile data-table transforms
+     (card > forced horizontal scroll for a screening/triage workflow). */
+  .mobileseg{display:none}
+  #tbl-sort-wrap{display:none}
+  @media(max-width:700px){
+    .mobileseg{display:flex;margin:0 20px 12px}
+    #tbl-sort-wrap{display:block;margin-bottom:10px}
+    #tbl thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+    #tbl,#tbl tbody{display:block;width:100%}
+    #tbl tr{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;position:relative}
+    #tbl tr.tbl-empty-row{background:none;border:none;padding:0}
+    #tbl td{display:block;border:0;padding:2px 0;white-space:normal;text-align:left}
+    #tbl td.mob-hide{display:none}
+    #tbl td[data-label]:not([data-label=""])::before{content:attr(data-label) ": ";color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
+    #tbl tr:not(.tbl-empty-row) td:first-child{position:absolute;top:8px;right:8px;padding:0}
+    #tbl tr:not(.tbl-empty-row) td:nth-child(2){font-weight:700;padding-right:64px}
+    #tbl td.num{text-align:left}
+  }
+  .hint{background:var(--panel2);border-bottom:1px solid var(--line);padding:8px 20px;display:flex;gap:14px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap}
+  .hint b{color:var(--ink)}
+  .hint button{margin-left:auto;background:none;border:0;color:var(--mut);cursor:pointer;font-size:11px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);white-space:nowrap}
+  .hint button:hover{color:var(--ink);border-color:var(--acc)}
+
+  /* --- Print this deal: isolate the open drawer, drop the app chrome + interactive
+     controls, print in normal document flow instead of the fixed off-canvas panel. --- */
+  @media print{
+    body>*:not(#detail){display:none!important}
+    .drawer{position:static!important;transform:none!important;width:100%!important;
+      max-width:100%!important;box-shadow:none!important;border:none!important;
+      height:auto!important;overflow:visible!important;color:#000}
+    .drawer .dhead{position:static;background:none;border-bottom:2px solid #000}
+    .drawer .close,.drawer .printbtn,.gallery img{cursor:default}
+    .drawer .close,.drawer .printbtn{display:none!important}
+    .verdictbig{border:2px solid currentColor!important;background:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pill{border:1.5px solid currentColor!important;background:none!important}
+    .printonly{display:block!important;color:#555;font-size:11px;margin-top:14px;border-top:1px solid #999;padding-top:8px}
+  }
 </style>
 </head>
 <body>
@@ -129,7 +174,16 @@
   </div>
   <div class="seedflag" id="seedflag">SEED DATA</div>
 </header>
+<div class="hint" id="hint" hidden>
+  <span><b>✓ Pass</b> clears the $50k profit + 20% ROI floors even under stress · <b>~ Marginal</b> clears both but fails stress ·
+  <b>ARV</b> is an asking-price proxy — Barbados has no sold-price data, so treat green as a screen, not a valuation.</span>
+  <button id="hint-close" type="button">Got it, don't show again</button>
+</div>
 <div class="kpis" id="kpis"></div>
+<div class="seg mobileseg" id="mobileview" role="tablist" aria-label="Mobile view">
+  <button data-view="list" class="active">Listings</button>
+  <button data-view="map">Map</button>
+</div>
 <div class="wrap">
   <div>
     <div class="card">
@@ -199,7 +253,7 @@
       </div>
     </div>
   </div>
-  <div>
+  <div id="map-wrap">
     <div class="card">
       <div class="maptools">
         <div class="seg" id="layerseg">
@@ -220,7 +274,7 @@
     </div>
   </div>
 </div>
-<div class="wrap" style="grid-template-columns:1fr">
+<div class="wrap" style="grid-template-columns:1fr" id="list-wrap">
   <div class="grid2">
     <div class="card">
       <div class="charthead">
@@ -235,6 +289,10 @@
     </div>
     <div class="card">
       <h3>Pipeline table <span style="color:var(--mut);font-weight:400;text-transform:none">— ★ to watch; click a row for details &amp; source; click headers to sort</span></h3>
+      <div id="tbl-sort-wrap">
+        <label class="vh" for="tbl-sort">Sort pipeline table by</label>
+        <select id="tbl-sort"></select>
+      </div>
       <div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
       <div class="fcount" id="tbl-cap"></div>
     </div>
@@ -366,8 +424,26 @@ var Uk=function(n){return n==null?'—':'$'+_nf.format(Math.round(n/1000))+'k'};
 var PC=function(n){return n==null?'—':n+'%'};
 var DATA=(window.BBDATA||{listings:[],parishes:[]});
 var LST=DATA.listings||[], P=DATA.parishes||[];
+// Hoisted above its first use: renderKPIs (called by the initial render() below) reads
+// MKT for prior-snapshot deltas. Declared here rather than down by renderTrends so it's
+// populated before that first call, not left undefined until the Market Trends <details>
+// happens to be defined further down the script.
+var MKT=((window.BBMARKET||{}).history)||[];
 var pcent={}; P.forEach(function(p){pcent[p.name]=p.centroid;});
 document.getElementById('seedflag').style.display=DATA.seed?'':'none';
+// Dismissible "how to read this" hint - persisted so it appears once per browser, not
+// once per session. Relevant now the dashboard has a semi-public URL: a first-time
+// visitor without the screening context behind the pass/marginal/ARV-proxy language
+// shouldn't have to guess it.
+(function(){
+  var HINT_KEY='bb_hint_dismissed';
+  var dismissed; try{dismissed=localStorage.getItem(HINT_KEY)==='1';}catch(e){dismissed=false;}
+  var hint=document.getElementById('hint');
+  if(!dismissed)hint.hidden=false;
+  document.getElementById('hint-close').onclick=function(){
+    hint.hidden=true; try{localStorage.setItem(HINT_KEY,'1');}catch(e){}
+  };
+})();
 
 // watchlist (persisted locally)
 var WATCH;
@@ -381,6 +457,36 @@ function saveWatch(){try{localStorage.setItem('bb_watchlist',JSON.stringify(Arra
 var HIDDEN;
 try{HIDDEN=new Set(JSON.parse(localStorage.getItem('bb_hidden')||'[]'));}catch(e){HIDDEN=new Set();}
 function saveHidden(){try{localStorage.setItem('bb_hidden',JSON.stringify(Array.from(HIDDEN)));}catch(e){}}
+
+// Filter/search/sort state (persisted locally). An analyst returns to the same working
+// set across visits - re-entering nine filter fields every time is a real productivity
+// tax a screening tool shouldn't impose. Saved from render() itself (the one choke point
+// every filter/search/sort interaction already passes through), restored once at load,
+// before the first render() - see the call site near the bottom of this script.
+var FILTER_KEY='bb_filters';
+function saveFilterState(){
+  try{localStorage.setItem(FILTER_KEY,JSON.stringify({
+    parish:selVals(fp),type:document.getElementById('f-type').value,
+    chan:document.getElementById('f-chan').value,rag:document.getElementById('f-rag').value,
+    price:document.getElementById('f-price').value,q:document.getElementById('f-q').value,
+    distressed:document.getElementById('f-distressed').checked,watch:document.getElementById('f-watch').checked,
+    showhidden:document.getElementById('f-showhidden').checked,sortKey:sortKey,sortDir:sortDir}));
+  }catch(e){}
+}
+function restoreFilterState(){
+  var raw,s; try{raw=localStorage.getItem(FILTER_KEY);}catch(e){return;}
+  if(!raw)return; try{s=JSON.parse(raw);}catch(e){return;}
+  if(s.parish&&s.parish.length)Array.prototype.forEach.call(fp.options,function(o){o.selected=s.parish.indexOf(o.value)>=0;});
+  if(s.type)document.getElementById('f-type').value=s.type;
+  if(s.chan)document.getElementById('f-chan').value=s.chan;
+  if(s.rag)document.getElementById('f-rag').value=s.rag;
+  if(s.price)document.getElementById('f-price').value=s.price;
+  if(s.q)document.getElementById('f-q').value=s.q;
+  if(s.distressed)document.getElementById('f-distressed').checked=true;
+  if(s.watch)document.getElementById('f-watch').checked=true;
+  if(s.showhidden)document.getElementById('f-showhidden').checked=true;
+  if(s.sortKey){sortKey=s.sortKey;sortDir=s.sortDir||-1;}
+}
 
 // Precomputed search text: built ONCE at load, not per keystroke. Naive substring is
 // the right call at this scale - Fuse.js's own published benchmarks put 10k records at
@@ -451,16 +557,32 @@ function renderCount(f){
   },1400);
 }
 function med(a){if(!a.length)return null;a=a.slice().sort(function(x,y){return x-y});var m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+// vs-last-snapshot deltas on the headline KPIs. Only shown when NO filters narrow the
+// view (f.length===LST.length) - comparing a filtered subset's count to the last FULL
+// snapshot would silently misrepresent a filter as market movement. Reuses trendDelta()
+// (defined below, hoisted) so "vs prior" reads identically here and in Market Trends.
+function kpiDelta(curVal,getter){
+  if(!MKT.length)return '';
+  return trendDelta(curVal,getter(MKT[MKT.length-1]));
+}
 function renderKPIs(f){
   var greens=f.filter(function(l){return l.deal.rag==='green'});
   var ambers=f.filter(function(l){return l.deal.rag==='amber'});
   var gp=greens.map(function(l){return l.deal.profit_base_usd;});
   var gd=greens.map(function(l){return l.deal.discount_to_arv_pct;});
-  var k=[['Pipeline',f.length,'listings in view'],
-    ['Green — pass base + stress',greens.length,'≥ $50k AND ≥ 20% ROI, survives stress'],
-    ['Amber — base only',ambers.length,'clears both floors, fails stress'],
+  var noFilters=f.length===LST.length;
+  var pDelta=noFilters?kpiDelta(f.length,function(s){return s.total_active_sale_listings;}):'';
+  var gDelta=noFilters?kpiDelta(greens.length,function(s){return s.rag_counts&&s.rag_counts.green;}):'';
+  var aDelta=noFilters?kpiDelta(ambers.length,function(s){return s.rag_counts&&s.rag_counts.amber;}):'';
+  // Median alongside mean: profit is heavily right-skewed by the occasional
+  // multi-million-dollar land/commercial deal, so "avg profit" alone overstates the
+  // typical green deal. Median is now the headline figure; avg stays as context.
+  var gpMed=gp.length?med(gp):null, gpAvg=gp.length?gp.reduce(function(a,b){return a+b},0)/gp.length:null;
+  var k=[['Pipeline',f.length,'listings in view'+pDelta],
+    ['Green — pass base + stress',greens.length,'≥ $50k AND ≥ 20% ROI, survives stress'+gDelta],
+    ['Amber — base only',ambers.length,'clears both floors, fails stress'+aDelta],
     ['Median discount (green)',(gd.length?med(gd).toFixed(0)+'%':'—'),'to ARV'],
-    ['Avg profit (green)',(gp.length?U(gp.reduce(function(a,b){return a+b},0)/gp.length):'—'),'per deal']];
+    ['Median profit (green)',(gpMed!=null?U(gpMed):'—'),'per deal'+(gpAvg!=null?' · avg '+U(gpAvg):'')]];
   document.getElementById('kpis').innerHTML=k.map(function(x){return '<div class="kpi"><div class="lab">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>';}).join('');
 }
 // Default to annualised ROI, not absolute profit. Above the $50k floor, capital is
@@ -472,6 +594,15 @@ function renderKPIs(f){
 // call is human. See research/06 §2.
 var sortKey='roiann',sortDir=-1;
 var COLS=[['watch','★',0],['title','Listing',0],['parish','Parish',0],['type','Type',0],['price_usd','Price',1],['arv','ARV',1],['reno','Reno',1],['profit','Profit',1],['roiann','ROI/yr%',1],['disc','Disc%',1],['rag','Status',0]];
+// Mobile-only sort control - the card transform hides <th> (no click targets left), so
+// this is the only way to change sort order on a phone. Mirrors the exact same
+// sortKey/sortDir/render() the desktop header clicks use - one source of sort truth.
+(function(){var tsel=document.getElementById('tbl-sort');
+  COLS.filter(function(c){return c[0]!=='watch';}).forEach(function(c){
+    var o=document.createElement('option');o.value=c[0];o.textContent=c[1];tsel.appendChild(o);});
+  tsel.value=sortKey;
+  tsel.addEventListener('change',function(){sortKey=tsel.value;sortDir=(sortKey==='title'||sortKey==='parish')?1:-1;render();});
+})();
 function rowVal(l,k){var d=l.deal;
   if(k==='watch')return WATCH.has(l.id)?1:0;
   if(k==='price_usd')return l.price_usd; if(k==='arv')return d.arv_usd||-1; if(k==='reno')return d.reno_cost_usd==null?-1:d.reno_cost_usd;
@@ -481,6 +612,7 @@ function rowVal(l,k){var d=l.deal;
 function renderTable(f){
   var th=document.querySelector('#tbl thead'), tb=document.querySelector('#tbl tbody');
   th.innerHTML='<tr>'+COLS.map(function(c){return '<th class="'+(c[2]?'num':'')+'" data-k="'+c[0]+'">'+c[1]+(sortKey===c[0]?(sortDir<0?' ▾':' ▴'):'')+'</th>';}).join('')+'</tr>';
+  var tsel=document.getElementById('tbl-sort'); if(tsel&&tsel.value!==sortKey)tsel.value=sortKey;
   var all=f.slice().sort(function(a,b){var x=rowVal(a,sortKey),y=rowVal(b,sortKey);return (x<y?-1:x>y?1:0)*sortDir;});
   // Render only the top slice. The table is SORTED, so with 2,940 rows the tail is
   // unreachable by any realistic scroll and exists only to cost time: measured at
@@ -490,18 +622,21 @@ function renderTable(f){
   // which is exactly the scoped-search failure NN/g warns about.
   var TABLE_CAP=250, rows=all.slice(0,TABLE_CAP);
   if(!all.length){
-    tb.innerHTML='<tr><td colspan="'+COLS.length+'" class="tbl-empty">No listings match the current filters — <button class="linkbtn" style="margin:0" onclick="resetFilters()">reset filters</button> or widen your search.</td></tr>';
+    tb.innerHTML='<tr class="tbl-empty-row"><td colspan="'+COLS.length+'" class="tbl-empty">No listings match the current filters — <button class="linkbtn" style="margin:0" onclick="resetFilters()">reset filters</button> or widen your search.</td></tr>';
     document.getElementById('tbl-cap').textContent='';
     Array.prototype.forEach.call(th.querySelectorAll('th'),function(h){h.onclick=function(){var k=h.getAttribute('data-k');if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}render();};});
     return;
   }
+  // data-label on every cell: unused on desktop, but powers the CSS-only card transform
+  // under ~700px (content: attr(data-label) as a mini row-label) - same markup, no
+  // second render path to keep in sync.
   tb.innerHTML=rows.map(function(l){var d=l.deal;return '<tr data-id="'+esc(l.id)+'" class="'+(HIDDEN.has(l.id)?'seen':'')+'">'+
-    '<td><button class="star'+(WATCH.has(l.id)?' on':'')+'" data-star="'+esc(l.id)+'" aria-label="toggle watchlist" title="watchlist">'+(WATCH.has(l.id)?'★':'☆')+'</button>'+'<button class="hidebtn" data-hide="'+esc(l.id)+'" aria-label="'+(HIDDEN.has(l.id)?'restore listing':'hide listing')+'" title="'+(HIDDEN.has(l.id)?'restore':'rule out / hide')+'">'+(HIDDEN.has(l.id)?'↺':'✕')+'</button></td>'+
-    '<td>'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</td>'+
-    '<td>'+esc(l.parish)+'</td><td>'+esc((l.type||'').replace(/_/g,' '))+'</td>'+
-    '<td class="num">'+U(l.price_usd)+'</td><td class="num">'+U(d.arv_usd)+'</td><td class="num">'+U(d.reno_cost_usd)+'</td>'+
-    '<td class="num">'+U(d.profit_base_usd)+'</td><td class="num">'+PC(d.roi_annual_pct)+'</td><td class="num">'+PC(d.discount_to_arv_pct)+'</td>'+
-    '<td>'+ragPill(d.rag)+' <span class="chan">'+((l.distressed&&l.distressed.channel!=='none')?esc(l.distressed.channel.replace(/_/g,' ')):'')+'</span></td></tr>';}).join('');
+    '<td data-label=""><button class="star'+(WATCH.has(l.id)?' on':'')+'" data-star="'+esc(l.id)+'" aria-label="toggle watchlist" title="watchlist">'+(WATCH.has(l.id)?'★':'☆')+'</button>'+'<button class="hidebtn" data-hide="'+esc(l.id)+'" aria-label="'+(HIDDEN.has(l.id)?'restore listing':'hide listing')+'" title="'+(HIDDEN.has(l.id)?'restore':'rule out / hide')+'">'+(HIDDEN.has(l.id)?'↺':'✕')+'</button></td>'+
+    '<td data-label="">'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</td>'+
+    '<td data-label="Parish">'+esc(l.parish)+'</td><td data-label="Type" class="mob-hide">'+esc((l.type||'').replace(/_/g,' '))+'</td>'+
+    '<td class="num" data-label="Price">'+U(l.price_usd)+'</td><td class="num mob-hide" data-label="ARV">'+U(d.arv_usd)+'</td><td class="num mob-hide" data-label="Reno">'+U(d.reno_cost_usd)+'</td>'+
+    '<td class="num" data-label="Profit">'+U(d.profit_base_usd)+'</td><td class="num" data-label="ROI/yr">'+PC(d.roi_annual_pct)+'</td><td class="num mob-hide" data-label="Disc%">'+PC(d.discount_to_arv_pct)+'</td>'+
+    '<td data-label="">'+ragPill(d.rag)+' <span class="chan">'+((l.distressed&&l.distressed.channel!=='none')?esc(l.distressed.channel.replace(/_/g,' ')):'')+'</span></td></tr>';}).join('');
   var capEl=document.getElementById('tbl-cap');
   if(capEl){capEl.textContent=all.length>TABLE_CAP
     ? 'Showing the top '+TABLE_CAP+' of '+all.length.toLocaleString()+' matching listings, by '+
@@ -644,6 +779,7 @@ function openDetail(id){
     ('<div style="color:var(--mut);font-size:12px;margin-top:8px">Off-market / no public URL — sourced via '+srcName+'. Approach the channel directly.</div>');
   var verdict=(d.rag==='green'?'✓ PASS — clears $50k + 20% ROI + stress':d.rag==='amber'?'~ MARGINAL — clears both floors, fails stress':d.rag==='unknown'?'? INSUFFICIENT DATA — '+d.flags.map(esc).join(', '):failReason(d));
   var html='<div class="dhead"><div><h2>'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</h2><div style="color:var(--mut);font-size:12px;margin-top:2px">'+esc(chan)+'</div></div>'+
+    '<button class="printbtn" id="drawer-print" aria-label="Print this deal" title="Print this deal">🖨 Print</button>'+
     '<button class="close" id="drawer-close" aria-label="Close details">×</button></div>'+
     '<div class="body"><div class="gallery">'+imgs+'</div>'+
     '<div class="verdictbig" style="background:'+COL[d.rag]+'22;color:'+COL[d.rag]+';border:1px solid '+COL[d.rag]+'">'+verdict+'</div>'+
@@ -651,13 +787,17 @@ function openDetail(id){
     '<div class="drow"><span class="k">Distressed signals</span><span>'+sig+'</span></div>'+rentRows+
     '<div class="sourcebox"><div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Where this was found</div>'+
     '<div style="font-weight:700;margin-top:3px">'+srcName+'</div>'+srcLink+
-    (l.notes?('<div style="color:var(--mut);font-size:11px;margin-top:10px">'+esc(l.notes)+'</div>'):'')+'</div></div>';
+    (l.notes?('<div style="color:var(--mut);font-size:11px;margin-top:10px">'+esc(l.notes)+'</div>'):'')+'</div>'+
+    '<div class="printonly">Printed '+new Date().toLocaleDateString()+' from Investment Property Dashboard — a screening'+
+    ' estimate, not a valuation or offer. Source: '+(link?esc(link):esc(srcName))+
+    '. ARV is an asking-price proxy (no sold-price data exists for Barbados).</div></div>';
   var dr=document.getElementById('detail'); dr.innerHTML=html;
   dr.setAttribute('aria-label',l.title);
   dr.classList.add('open'); dr.setAttribute('aria-hidden','false');
   document.getElementById('overlay').classList.add('open');
   lastFocus=document.activeElement;
   document.getElementById('drawer-close').onclick=closeDetail;
+  document.getElementById('drawer-print').onclick=function(){window.print();};
   document.getElementById('drawer-close').focus();
   var mk=markerById[id]; if(mk){try{map.setView(mk.getLatLng(),14);}catch(e){}}
 }
@@ -832,7 +972,7 @@ function runCalc(){
     (d.mao_usd==null?'':(d.mao_usd<=0?'<div style="font-size:11px;font-weight:400;margin-top:4px;color:var(--mut)">No purchase price clears the US$50k target for this reno/exit</div>':'<div style="font-size:11px;font-weight:400;margin-top:4px;color:var(--mut)">Offer at or below <b style="color:'+COL[d.rag]+'">'+U(d.mao_usd)+'</b> to hit target</div>'));
 }
 function setSeg(layer){curLayer=layer;Array.prototype.forEach.call(document.querySelectorAll('#layerseg button'),function(b){b.classList.toggle('active',b.getAttribute('data-layer')===layer);});}
-function render(){var f=getFiltered();renderCount(f);renderKPIs(f);renderTable(f);renderChart(f);applyLayer(f);}
+function render(){var f=getFiltered();renderCount(f);renderKPIs(f);renderTable(f);renderChart(f);applyLayer(f);saveFilterState();}
 ['f-parish','f-type','f-chan','f-rag','f-price','f-distressed','f-watch','f-showhidden'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('f-price').addEventListener('input',render);
 // Search DOES debounce - but the render, not the filter, and only after measuring.
@@ -905,6 +1045,27 @@ document.getElementById('f-csv').onclick=function(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(function(){URL.revokeObjectURL(a.href);},0);
 };
+// Mobile Map<->List toggle. On a phone, the desktop two-up layout (filters+map, then
+// chart+table) stacks into a long scroll before reaching the pipeline table - the actual
+// screening surface. This lets a phone user jump straight to either without scrolling.
+// Filters stay visible in both (they narrow both), matching the map+list dual-view
+// pattern research recommends over a forced full-page scroll.
+function setMobileView(v){
+  Array.prototype.forEach.call(document.querySelectorAll('#mobileview button'),function(b){b.classList.toggle('active',b.getAttribute('data-view')===v);});
+  var mapEl=document.getElementById('map-wrap'),listEl=document.getElementById('list-wrap');
+  if(window.innerWidth<=700){
+    mapEl.style.display=v==='map'?'':'none';
+    listEl.style.display=v==='list'?'':'none';
+  }
+}
+Array.prototype.forEach.call(document.querySelectorAll('#mobileview button'),function(b){b.onclick=function(){setMobileView(b.getAttribute('data-view'));};});
+// Clear any inline hide when the viewport grows past mobile (resize/rotate/devtools),
+// so desktop always shows both panels regardless of which was last selected on a phone.
+window.addEventListener('resize',function(){
+  if(window.innerWidth>700){document.getElementById('map-wrap').style.display='';document.getElementById('list-wrap').style.display='';}
+  else{var active=document.querySelector('#mobileview button.active');setMobileView(active?active.getAttribute('data-view'):'list');}
+});
+setMobileView('list');
 Array.prototype.forEach.call(document.querySelectorAll('#layerseg button'),function(b){b.onclick=function(){setSeg(b.getAttribute('data-layer'));applyLayer(getFiltered());};});
 document.getElementById('heatmetric').addEventListener('change',function(){if(curLayer==='heat')applyLayer(getFiltered());});
 Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(t){t.onclick=function(){Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(x){x.classList.remove('active');});t.classList.add('active');document.getElementById('pane-filters').style.display=t.getAttribute('data-pane')==='filters'?'':'none';document.getElementById('pane-calc').style.display=t.getAttribute('data-pane')==='calc'?'':'none';};});
@@ -916,10 +1077,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#c-reno option'),functio
   var psf=CFG.RENO_PSF[o.value]; if(psf!=null)o.textContent=o.textContent.replace(/\s*\(.*\)\s*$/,'')+' ($'+psf+'/sqft)';
 });
 document.getElementById('foot').innerHTML='<b>Data:</b> '+(DATA.seed?'SEED / illustrative — 6 REAL asking-price comps (marked COMP) + 8 CONSTRUCTED distressed examples at plausible channel discounts. Replace with scraped data (<code>scrapers/refresh.py</code>).':'live')+' Generated '+esc(DATA.generated_at||'—')+'. <b>Model:</b> selling = exact PTT (2.5% over US$75k = BBD 150k exempt) + stamp 1% + agent 5.9% incl VAT + legal 1.76% (~10.4% at a $250k exit); reno $'+CFG.RENO_PSF.cosmetic+'/$'+CFG.RENO_PSF.moderate+'/$'+CFG.RENO_PSF.gut+' per sqft (+'+Math.round(CFG.CONT*100)+'% contingency; cosmetic = researched band floor — treat green as a screen, get a QS quote); holding $'+_nf.format(CFG.HPM)+'/mo × '+CFG.HOLD.cosmetic+'/'+CFG.HOLD.moderate+'/'+CFG.HOLD.gut+'; target ≥ US$'+_nf.format(CFG.TARGET)+' and ≥ '+Math.round(CFG.TARGET_ROI*100)+'% ROI; stress = ARV −10%, reno +20%, +3 months (incl. interest). GREY = insufficient data (never a confident green on missing inputs). No CGT in Barbados. BBD = USD × 2. See <code>docs/02-deal-economics-model.md</code>.';
-render();runCalc();
+restoreFilterState();render();runCalc();
 
 // === Market Trends (historical, from scrapers/market_stats.py snapshots) ===
-var MKT=((window.BBMARKET||{}).history)||[];
 var trendsRendered=false,trendChart1=null,trendChart2=null;
 document.getElementById('trends').addEventListener('toggle',function(e){
   if(e.target.open&&!trendsRendered){trendsRendered=true;renderTrends();}
