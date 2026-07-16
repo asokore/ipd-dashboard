@@ -321,7 +321,7 @@
 <script id="deal-model">
 // === Deal model - MIRRORS scrapers/deal_model.py EXACTLY. ===
 // Change both together and re-run scrapers/check_parity.py.
-var CFG={RENO_PSF:{cosmetic:50,moderate:100,gut:170},CONT:0.17,HOLD:{cosmetic:4,moderate:6,gut:8},HPM:1600,BUY:0.022,SURVEY:750,TARGET:50000,RATE:0.06,LTV:0.65,ARR:0.016,PTT_EXEMPT:75000,MGMT:0.10,VAC:0.05,MAINT_INS:0.03,CAP:0.08,HAIRCUT_VACANT:0.5,HAIRCUT_TENANTED:0.75,TARGET_ROI:0.20};
+var CFG={RENO_PSF:{cosmetic:50,moderate:100,gut:170},CONT:0.17,HOLD:{cosmetic:4,moderate:6,gut:8},HPM:1600,BUY:0.022,SURVEY:750,TARGET:50000,RATE:0.06,LTV:0.65,ARR:0.016,PTT_EXEMPT:75000,MGMT:0.10,VAC:0.05,MAINT_INS:0.03,CAP:0.085,HAIRCUT_VACANT:0.5,HAIRCUT_TENANTED:0.75,TARGET_ROI:0.20};
 function sellingCosts(arv){return 0.025*Math.max(0,arv-CFG.PTT_EXEMPT)+0.01*arv+0.05*arv*1.175+0.0176*arv;}
 // A deal can now fail on EITHER hard floor ($50k absolute, 20% return on capital).
 // Saying "below $50k filter" on a $94k-profit deal rejected for a 19.5% return would
@@ -346,7 +346,7 @@ function scoreDeal(arv,price,area,reno,financed,monthlyRent,rentHaircutPct){
   var finance=loan*CFG.RATE*H/12;
   var buying=CFG.BUY*(price||0)+CFG.SURVEY+CFG.ARR*loan;
   if(flags.length){
-    return {arv_usd:arv&&arv>0?Math.round(arv):null,reno_cost_usd:null,holding_usd:Math.round(holding),
+    return {arv_usd:arv&&arv>0?Math.round(arv):null,reno_cost_usd:null,holding_usd:null,
       selling_usd:null,buying_usd:null,mao_usd:null,profit_base_usd:null,profit_stress_usd:null,
       roi_pct:null,roi_annual_pct:null,discount_to_arv_pct:null,gross_yield_on_cost_pct:null,
       noi_usd:null,investor_value_usd:null,qualifying_rental_income_usd:null,rent_haircut_pct:null,
@@ -356,8 +356,17 @@ function scoreDeal(arv,price,area,reno,financed,monthlyRent,rentHaircutPct){
   var renoC=area*r*(1+CFG.CONT);
   var selling=sellingCosts(arv);
   var profit=arv-price-buying-renoC-holding-selling-finance;
-  var denom=1+CFG.BUY+(financed?CFG.LTV*(CFG.RATE*H/12+CFG.ARR):0);
-  var mao=(arv-renoC-holding-selling-CFG.TARGET-CFG.SURVEY)/denom;
+  // MAO: the highest price clearing BOTH hard floors (profit AND ROI), not profit
+  // alone - MUST mirror deal_model.py's mao_K/mao_D/mao_F/mao_E/mao_profit/mao_roi
+  // exactly. See its note: buying at a profit-only MAO could still score red on ROI.
+  var fin=financed?1:0;
+  var maoK=arv-renoC-holding-selling-CFG.SURVEY;
+  var maoD=1+CFG.BUY+fin*CFG.LTV*(CFG.RATE*H/12+CFG.ARR);
+  var maoF=CFG.SURVEY+renoC+holding;
+  var maoE=1+CFG.BUY-fin*CFG.LTV*(1-CFG.ARR-CFG.RATE*H/12);
+  var maoProfit=(maoK-CFG.TARGET)/maoD;
+  var maoRoi=(maoK-CFG.TARGET_ROI*maoF)/(maoD+CFG.TARGET_ROI*maoE);
+  var mao=Math.min(maoProfit,maoRoi);
   var cashIn=(price-loan)+buying+renoC+holding+finance;
   var roi=cashIn?profit/cashIn:0;
   var roiAnnual=roi*12/H;
