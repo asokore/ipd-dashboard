@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>Investment Property Dashboard — Barbados Distressed-Acquisition Pipeline</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+  :root{--bg:#0f1620;--panel:#17212e;--panel2:#1e2b3a;--line:#2b3a4d;--ink:#e8eef5;--mut:#93a4b8;--acc:#4aa3ff;--green:#2fbf71;--amber:#f0a83c;--red:#e5573f;--unk:#8899aa;}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(180deg,#13202e,#0f1620)}
+  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  header .sub{color:var(--mut);font-size:12px}
+  .seedflag{margin-left:auto;background:#3a2b12;color:#f0a83c;border:1px solid #6b4d1f;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 20px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .kpi .lab{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .val{font-size:22px;font-weight:700;margin-top:4px}
+  .kpi .sub{font-size:11px;color:var(--mut)}
+  .wrap{display:grid;grid-template-columns:300px 1fr;gap:14px;padding:0 20px 20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+  select,input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:7px 8px;font-size:13px}
+  select[multiple]{height:110px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}
+  .tab{flex:1;text-align:center;padding:7px;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--mut);font-size:12px;background:var(--panel2)}
+  .tab.active{background:var(--acc);color:#04121f;border-color:var(--acc);font-weight:600}
+  #map{height:460px;border-radius:10px;border:1px solid var(--line)}
+  .maptools{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .maptools .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .maptools .seg button{background:var(--panel2);color:var(--mut);border:0;padding:6px 10px;cursor:pointer;font-size:12px}
+  .maptools .seg button.active{background:var(--acc);color:#04121f;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel);z-index:1}
+  td.num,th.num{text-align:right}
+  .tblwrap{max-height:340px;overflow:auto;border-radius:8px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.green{background:rgba(47,191,113,.15);color:var(--green);border:1px solid rgba(47,191,113,.4)}
+  .pill.amber{background:rgba(240,168,60,.15);color:var(--amber);border:1px solid rgba(240,168,60,.4)}
+  .pill.red{background:rgba(229,87,63,.15);color:var(--red);border:1px solid rgba(229,87,63,.4)}
+  .pill.unknown{background:rgba(136,153,170,.15);color:var(--unk);border:1px solid rgba(136,153,170,.4)}
+  .comp{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10px;font-weight:700;background:rgba(74,163,255,.15);color:var(--acc);border:1px solid rgba(74,163,255,.4);margin-left:4px}
+  .chan{font-size:11px;color:var(--mut)}
+  tr.sel td{background:rgba(74,163,255,.12)}
+  tbody tr{cursor:pointer}
+  .star{cursor:pointer;font-size:15px;color:var(--mut);background:none;border:0;padding:0 2px}
+  /* Visually hidden but available to screen readers - real labels, not placeholders. */
+  .vh{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  #f-q{width:100%}
+  .fcount{font-size:11px;color:var(--mut);margin:6px 0 2px}
+  .fcount b{color:var(--ink)}
+  .linkbtn{background:none;border:0;color:var(--acc);cursor:pointer;font-size:11px;padding:0;margin-bottom:6px;text-decoration:underline}
+  tr.seen td{opacity:.45}
+  .hidebtn{cursor:pointer;font-size:12px;color:var(--mut);background:none;border:0;padding:0 2px}
+  .hidebtn:hover{color:var(--ink)}
+  .star.on{color:#ffd75e}
+  .calcout{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .calcout .b{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:8px}
+  .calcout .b .l{font-size:10.5px;color:var(--mut);text-transform:uppercase}
+  .calcout .b .v{font-size:16px;font-weight:700;margin-top:2px}
+  .verdict{margin-top:10px;padding:10px;border-radius:8px;text-align:center;font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .chartbox{position:relative;height:320px}
+  .foot{color:var(--mut);font-size:11px;padding:0 20px 26px;line-height:1.7}
+  .foot code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;display:none}
+  .overlay.open{display:block}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:430px;max-width:94vw;background:var(--panel);border-left:1px solid var(--line);box-shadow:-10px 0 40px rgba(0,0,0,.5);transform:translateX(102%);transition:transform .25s ease;z-index:1200;overflow:auto}
+  .drawer.open{transform:translateX(0)}
+  .drawer .dhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start;position:sticky;top:0;background:var(--panel);z-index:2}
+  .drawer .dhead h2{font-size:16px;margin:0;line-height:1.3}
+  .drawer .close{margin-left:auto;cursor:pointer;color:var(--mut);font-size:24px;line-height:1;background:none;border:0}
+  .drawer .close:focus-visible,.star:focus-visible,button:focus-visible,a.srcbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .drawer .body{padding:14px 16px}
+  .gallery{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px}
+  .gallery img{height:120px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto;cursor:zoom-in}
+  .lightbox{position:fixed;inset:0;background:rgba(6,10,16,.92);z-index:1300;display:none;align-items:center;justify-content:center;flex-direction:column}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:min(88vw,1100px);max-height:78vh;border-radius:8px;box-shadow:0 10px 50px rgba(0,0,0,.6);user-select:none}
+  .lightbox .lb-close{position:absolute;top:16px;right:20px;background:none;border:0;color:var(--ink);font-size:32px;line-height:1;cursor:pointer;padding:4px 10px}
+  .lightbox .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--ink);font-size:26px;line-height:1;width:48px;height:48px;border-radius:50%;cursor:pointer}
+  .lightbox .lb-nav:hover{background:rgba(255,255,255,.18)}
+  .lightbox .lb-prev{left:16px}
+  .lightbox .lb-next{right:16px}
+  .lightbox .lb-count{color:var(--mut);font-size:12px;margin-top:12px}
+  .lightbox .lb-close:focus-visible,.lightbox .lb-nav:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  @media(max-width:600px){.lightbox .lb-nav{width:40px;height:40px;font-size:20px}.lightbox .lb-close{font-size:26px}}
+  .drow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .drow .k{color:var(--mut)}
+  .dsec{margin:12px 0 4px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+  .verdictbig{padding:10px;border-radius:8px;text-align:center;font-weight:700;margin:6px 0 12px}
+  .sourcebox{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .srcbtn{display:inline-block;margin-top:8px;background:var(--acc);color:#04121f;font-weight:700;padding:9px 14px;border-radius:8px;text-decoration:none}
+  .trends{padding:0 20px 20px}
+  .trends>summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:10px 0;user-select:none}
+  .trends>summary:hover{color:var(--ink)}
+  .trendkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .trendtbl{margin-top:12px;font-size:12px}
+  .trendtbl table{width:100%;border-collapse:collapse}
+  .trendtbl th,.trendtbl td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  .trendtbl th:first-child,.trendtbl td:first-child{text-align:left}
+  .trendempty{color:var(--mut);font-size:12px;padding:10px 0}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.wrap{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.trendkpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Investment Property Dashboard</h1>
+    <div class="sub">Distressed-acquisition &rarr; renovate &rarr; resell &bull; filter: net &ge; US$50k after all costs</div>
+  </div>
+  <div class="seedflag" id="seedflag">SEED DATA</div>
+</header>
+<div class="kpis" id="kpis"></div>
+<div class="wrap">
+  <div>
+    <div class="card">
+      <div class="tabs">
+        <div class="tab active" data-pane="filters">Filters</div>
+        <div class="tab" data-pane="calc">Deal Calc</div>
+      </div>
+      <div id="pane-filters">
+        <!-- Search is the FIRST control in the filter panel, per Carbon's rule that
+             placement follows scope (this searches the listing set the filters act on)
+             and NN/g's that search is a type-in field at the top. It is a `<search>`
+             element (implicit role=search, so no role attribute needed) with a real
+             visually-hidden <label> - a placeholder is not a label, it vanishes on typing. -->
+        <search>
+          <label class="vh" for="f-q">Search listings</label>
+          <input id="f-q" type="search" autocomplete="off"
+                 placeholder="Search title, area, description…" />
+        </search>
+        <!-- Scoped-search mitigation, NOT decoration. NN/g: users expect search to cover
+             everything and wrongly conclude content doesn't exist when it is silently
+             intersected with other filters. This states the intersection at all times and
+             offers one-click escape. role=status + aria-atomic announce the count; the
+             region must exist in the DOM before anything is written into it. -->
+        <div class="fcount" id="f-count"></div>
+        <!-- Separate live region: the visible count above updates instantly for sighted
+             users, while THIS one is written only once typing settles, so a screen reader
+             isn't talked over on every keystroke. Present in the DOM before any write. -->
+        <div class="vh" id="f-count-live" role="status" aria-atomic="true"></div>
+        <button id="f-clear" class="linkbtn" hidden>Clear all filters</button>
+        <label for="f-parish">Parish</label>
+        <select id="f-parish" multiple></select>
+        <label for="f-type">Property type</label>
+        <select id="f-type"><option value="">All types</option></select>
+        <label for="f-chan">Sourcing channel</label>
+        <select id="f-chan"><option value="">All channels</option></select>
+        <div class="row2">
+          <div><label for="f-rag">Deal status</label>
+            <select id="f-rag"><option value="">All</option><option value="green">Green (pass)</option><option value="amber">Amber</option><option value="red">Red (fail)</option><option value="unknown">Unknown (data gap)</option></select></div>
+          <div><label for="f-price">Max price (US$k)</label><input id="f-price" type="number" placeholder="e.g. 300" /></div>
+        </div>
+        <label style="margin-top:10px"><input type="checkbox" id="f-distressed" style="width:auto;margin-right:6px"/>Distressed / motivated only</label>
+        <label><input type="checkbox" id="f-watch" style="width:auto;margin-right:6px"/>Watchlist only</label>
+        <label><input type="checkbox" id="f-showhidden" style="width:auto;margin-right:6px"/>Show hidden / ruled-out</label>
+        <button id="f-reset" style="margin-top:12px;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px;border-radius:7px;cursor:pointer">Reset filters</button>
+        <!-- CSV export of the FILTERED set, not everything - the point is to take a
+             screened shortlist into a spreadsheet or to an attorney/QS. Notably no
+             consumer portal offers this at all; the investor tools (PropStream et al)
+             all do, which is the tell for which category this dashboard belongs to. -->
+        <button id="f-csv" style="margin-top:8px;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px;border-radius:7px;cursor:pointer">Export filtered to CSV</button>
+      </div>
+      <div id="pane-calc" style="display:none">
+        <div class="row2">
+          <div><label for="c-arv">ARV / resale (US$)</label><input id="c-arv" type="number" value="250000"/></div>
+          <div><label for="c-price">Purchase (US$)</label><input id="c-price" type="number" value="95000"/></div>
+        </div>
+        <div class="row2">
+          <div><label for="c-area">Area (sqft)</label><input id="c-area" type="number" value="1200"/></div>
+          <div><label for="c-reno">Reno intensity</label><select id="c-reno"><option value="cosmetic">Cosmetic ($40/sqft)</option><option value="moderate" selected>Moderate ($75/sqft)</option><option value="gut">Gut ($130/sqft)</option></select></div>
+        </div>
+        <label for="c-rent">Monthly rent if kept/sold to investor (US$, optional)</label>
+        <input id="c-rent" type="number" placeholder="e.g. 1800"/>
+        <label style="margin-top:8px"><input type="checkbox" id="c-fin" style="width:auto;margin-right:6px"/>Financed (65% LTV @ 6%)</label>
+        <label style="margin-top:4px"><input type="checkbox" id="c-tenanted" style="width:auto;margin-right:6px"/>Existing tenant, occupied &gt;1yr (bank counts 75% of rent instead of 50%)</label>
+        <div class="calcout" id="c-out"></div>
+        <div class="verdict" id="c-verdict"></div>
+        <div style="font-size:11px;color:var(--mut);margin-top:8px">MAO = max offer that still clears US$50k after all costs. Mirrors <code>scrapers/deal_model.py</code> exactly (checked by <code>scrapers/check_parity.py</code>).</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="maptools">
+        <div class="seg" id="layerseg">
+          <button data-layer="markers" class="active">Deal pins</button>
+          <button data-layer="heat">Heat</button>
+          <button data-layer="parish">Parish $/sqft</button>
+        </div>
+        <span style="color:var(--mut);font-size:12px">Heat metric</span>
+        <select id="heatmetric" style="width:auto">
+          <option value="profit">Projected profit</option>
+          <option value="roi">Annualised ROI %</option>
+          <option value="ppsqft">Price $/sqft</option>
+          <option value="discount">Discount to ARV %</option>
+        </select>
+        <span id="maplegend" style="color:var(--mut);font-size:11px;margin-left:auto"></span>
+      </div>
+      <div id="map"></div>
+    </div>
+  </div>
+</div>
+<div class="wrap" style="grid-template-columns:1fr">
+  <div class="grid2">
+    <div class="card">
+      <h3>Projected profit by listing (filtered)</h3>
+      <div class="chartbox"><canvas id="chart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Pipeline table <span style="color:var(--mut);font-weight:400;text-transform:none">— ★ to watch; click a row for details &amp; source; click headers to sort</span></h3>
+      <div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+      <div class="fcount" id="tbl-cap"></div>
+    </div>
+  </div>
+</div>
+<details class="trends" id="trends">
+  <summary>Market Trends (active listings, prices &amp; deal quality over time)</summary>
+  <div id="trends-body"></div>
+</details>
+<div class="foot" id="foot"></div>
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="detail" role="dialog" aria-modal="true" aria-hidden="true"></div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" aria-hidden="true">
+  <button class="lb-close" id="lb-close" aria-label="Close photo viewer">×</button>
+  <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous photo">‹</button>
+  <img id="lb-img" src="" alt=""/>
+  <button class="lb-nav lb-next" id="lb-next" aria-label="Next photo">›</button>
+  <div class="lb-count" id="lb-count"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<script src="market_stats.js"></script>
+<script src="parishes_geo.js"></script>
+<script id="deal-model">
+// === Deal model - MIRRORS scrapers/deal_model.py EXACTLY. ===
+// Change both together and re-run scrapers/check_parity.py.
+var CFG={RENO_PSF:{cosmetic:50,moderate:100,gut:170},CONT:0.17,HOLD:{cosmetic:4,moderate:6,gut:8},HPM:1600,BUY:0.022,SURVEY:750,TARGET:50000,RATE:0.06,LTV:0.65,ARR:0.016,PTT_EXEMPT:75000,MGMT:0.10,VAC:0.05,MAINT_INS:0.03,CAP:0.08,HAIRCUT_VACANT:0.5,HAIRCUT_TENANTED:0.75,TARGET_ROI:0.20};
+function sellingCosts(arv){return 0.025*Math.max(0,arv-CFG.PTT_EXEMPT)+0.01*arv+0.05*arv*1.175+0.0176*arv;}
+// A deal can now fail on EITHER hard floor ($50k absolute, 20% return on capital).
+// Saying "below $50k filter" on a $94k-profit deal rejected for a 19.5% return would
+// be simply untrue, and the number is right there on screen to contradict it.
+function failReason(d){
+  var lowProfit=d.profit_base_usd!=null&&d.profit_base_usd<CFG.TARGET;
+  var lowRoi=d.roi_pct!=null&&d.roi_pct<CFG.TARGET_ROI*100;
+  if(lowProfit&&lowRoi)return '✗ FAIL — below $50k and below 20% ROI';
+  if(lowRoi)return '✗ FAIL — clears $50k but only '+PC(d.roi_pct)+' ROI on capital (need 20%)';
+  return '✗ FAIL — below $50k filter';
+}
+function scoreDeal(arv,price,area,reno,financed,monthlyRent,rentHaircutPct){
+  if(rentHaircutPct==null)rentHaircutPct=CFG.HAIRCUT_VACANT;
+  var flags=[];
+  if(!(reno in CFG.RENO_PSF)){flags.push('bad_reno_intensity');reno='moderate';}
+  var r=CFG.RENO_PSF[reno],H=CFG.HOLD[reno];
+  if(!area||area<=0)flags.push('missing_area');
+  if(!arv||arv<=0)flags.push('missing_arv');
+  if(!price||price<=0)flags.push('missing_price');
+  var holding=H*CFG.HPM;
+  var loan=(financed&&price>0)?CFG.LTV*price:0;
+  var finance=loan*CFG.RATE*H/12;
+  var buying=CFG.BUY*(price||0)+CFG.SURVEY+CFG.ARR*loan;
+  if(flags.length){
+    return {arv_usd:arv&&arv>0?Math.round(arv):null,reno_cost_usd:null,holding_usd:Math.round(holding),
+      selling_usd:null,buying_usd:null,mao_usd:null,profit_base_usd:null,profit_stress_usd:null,
+      roi_pct:null,roi_annual_pct:null,discount_to_arv_pct:null,gross_yield_on_cost_pct:null,
+      noi_usd:null,investor_value_usd:null,qualifying_rental_income_usd:null,rent_haircut_pct:null,
+      rental_fallback_ok:null,
+      reno_intensity:reno,rag:'unknown',passes_filter:false,flags:flags};
+  }
+  var renoC=area*r*(1+CFG.CONT);
+  var selling=sellingCosts(arv);
+  var profit=arv-price-buying-renoC-holding-selling-finance;
+  var denom=1+CFG.BUY+(financed?CFG.LTV*(CFG.RATE*H/12+CFG.ARR):0);
+  var mao=(arv-renoC-holding-selling-CFG.TARGET-CFG.SURVEY)/denom;
+  var cashIn=(price-loan)+buying+renoC+holding+finance;
+  var roi=cashIn?profit/cashIn:0;
+  var roiAnnual=roi*12/H;
+  var sArv=arv*0.9;
+  var pStress=sArv-price-buying-renoC*1.2-(H+3)*CFG.HPM-sellingCosts(sArv)-loan*CFG.RATE*(H+3)/12;
+  // Dual hurdle - MUST mirror deal_model.py's meets_base/passes exactly (see its
+  // note for why: $ floor and ROI floor are both hard, gate on simple roi not
+  // roiAnnual, and failing the ROI floor is red rather than amber).
+  var meetsBase=profit>=CFG.TARGET&&roi>=CFG.TARGET_ROI;
+  var passes=meetsBase&&pStress>0;
+  var rag=passes?'green':(meetsBase?'amber':'red');
+  // Itemized landlord opex (mgmt fee + vacancy allowance + insurance/maintenance);
+  // land tax is a known per-property BRA figure, not modelled generically here.
+  var rentOpexRate=CFG.MGMT+CFG.VAC+CFG.MAINT_INS;
+  var gy=null,noi=null,iv=null,qualRent=null,haircutPct=null,rok=null;
+  if(monthlyRent&&monthlyRent>0){
+    var allIn=price+buying+renoC+holding;
+    gy=monthlyRent*12/allIn*100;
+    noi=monthlyRent*12*(1-rentOpexRate);
+    iv=noi/CFG.CAP;
+    // Bank mortgage-serviceability check: lenders discount PROJECTED rent
+    // before counting it toward debt-service capacity (default 50% vacant
+    // possession/tenancy <1yr, 75% tenanted >1yr) - distinct from the
+    // property's own expected economics above (NOI/investor value use the
+    // itemized opex rate on the FULL rent, no haircut).
+    qualRent=monthlyRent*rentHaircutPct;
+    haircutPct=rentHaircutPct*100;
+    rok=(qualRent*(1-rentOpexRate)-loan*CFG.RATE/12)>=0;
+  }
+  return {arv_usd:Math.round(arv),reno_cost_usd:Math.round(renoC),holding_usd:Math.round(holding),
+    selling_usd:Math.round(selling),buying_usd:Math.round(buying),mao_usd:Math.round(mao),
+    profit_base_usd:Math.round(profit),profit_stress_usd:Math.round(pStress),
+    roi_pct:Math.round(roi*1000)/10,roi_annual_pct:Math.round(roiAnnual*1000)/10,
+    discount_to_arv_pct:Math.round((1-price/arv)*1000)/10,
+    gross_yield_on_cost_pct:gy==null?null:Math.round(gy*10)/10,
+    noi_usd:noi==null?null:Math.round(noi),
+    investor_value_usd:iv==null?null:Math.round(iv),
+    qualifying_rental_income_usd:qualRent==null?null:Math.round(qualRent),
+    rent_haircut_pct:haircutPct==null?null:Math.round(haircutPct*10)/10,
+    rental_fallback_ok:rok,reno_intensity:reno,rag:rag,passes_filter:passes,flags:flags};
+}
+</script>
+<script id="app">
+var COL={green:'#2fbf71',amber:'#f0a83c',red:'#e5573f',unknown:'#8899aa'};
+var _ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(s){return s==null?'':String(s).replace(/[&<>"']/g,function(m){return _ESC[m];});}
+function safeUrl(u){return (typeof u==='string'&&/^https?:\/\//i.test(u))?u:'';}
+// Cached Intl formatter. Number.prototype.toLocaleString() builds a fresh
+// Intl.NumberFormat on EVERY call - measured here as the single biggest render cost:
+// each table row formats ~5 numbers, so 250 rows span ~1,250 Intl instances and 142ms
+// just to build the row strings (sorting all 2,940 listings cost 26ms by comparison).
+// One reused formatter is the standard fix and is ~an order of magnitude faster.
+var _nf=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
+var U=function(n){return n==null?'—':'$'+_nf.format(Math.round(n))};
+var Uk=function(n){return n==null?'—':'$'+_nf.format(Math.round(n/1000))+'k'};
+var PC=function(n){return n==null?'—':n+'%'};
+var DATA=(window.BBDATA||{listings:[],parishes:[]});
+var LST=DATA.listings||[], P=DATA.parishes||[];
+var pcent={}; P.forEach(function(p){pcent[p.name]=p.centroid;});
+document.getElementById('seedflag').style.display=DATA.seed?'':'none';
+
+// watchlist (persisted locally)
+var WATCH;
+try{WATCH=new Set(JSON.parse(localStorage.getItem('bb_watchlist')||'[]'));}catch(e){WATCH=new Set();}
+function saveWatch(){try{localStorage.setItem('bb_watchlist',JSON.stringify(Array.from(WATCH)));}catch(e){}}
+
+// Hidden/"ruled out" listings (persisted locally). Screening ~2,900 listings
+// repeatedly is attention-limited; Redfin and Zillow both ship this for that reason.
+// Note theirs explicitly does NOT work on off-market/sold stock - i.e. exactly the
+// distressed inventory this tool exists for - so ours applies to everything.
+var HIDDEN;
+try{HIDDEN=new Set(JSON.parse(localStorage.getItem('bb_hidden')||'[]'));}catch(e){HIDDEN=new Set();}
+function saveHidden(){try{localStorage.setItem('bb_hidden',JSON.stringify(Array.from(HIDDEN)));}catch(e){}}
+
+// Precomputed search text: built ONCE at load, not per keystroke. Naive substring is
+// the right call at this scale - Fuse.js's own published benchmarks put 10k records at
+// 182ms for token search, so ~3k here is tens of ms at worst, and bitap fuzzy matching
+// is strictly costlier than native .includes(). Fuzzy would also actively hurt: on a
+// catalogue you know well, "pear" matching "bear" is a bug, not a feature. Revisit past
+// ~20k records. Deliberately NO debounce on the filter: RAIL's instant budget is 100ms
+// and this runs far inside it, so a 300ms debounce would add 300ms to hide ~5ms.
+LST.forEach(function(l){
+  l._q=[l.title,l.locality,l.parish,l.type,l.description,l.notes,l.source_name,
+        (l.agent&&l.agent.firm)||''].filter(Boolean).join(' ').toLowerCase();
+});
+
+var fp=document.getElementById('f-parish');
+P.slice().sort(function(a,b){return a.name<b.name?-1:1}).forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name+(p.is_target?' ★':'');fp.appendChild(o);});
+var types=[]; LST.forEach(function(l){if(types.indexOf(l.type)<0)types.push(l.type);});
+types.sort().forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t.replace(/_/g,' ');document.getElementById('f-type').appendChild(o);});
+var chans=[]; LST.forEach(function(l){var c=l.distressed&&l.distressed.channel;if(c&&c!=='none'&&chans.indexOf(c)<0)chans.push(c);});
+chans.sort().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c.replace(/_/g,' ');document.getElementById('f-chan').appendChild(o);});
+
+function selVals(sel){return Array.prototype.filter.call(sel.options,function(o){return o.selected}).map(function(o){return o.value});}
+function getFiltered(){
+  var par=selVals(fp), typ=document.getElementById('f-type').value, chan=document.getElementById('f-chan').value,
+      rag=document.getElementById('f-rag').value, maxp=parseFloat(document.getElementById('f-price').value),
+      dist=document.getElementById('f-distressed').checked, watch=document.getElementById('f-watch').checked,
+      q=(document.getElementById('f-q').value||'').trim().toLowerCase(),
+      showHidden=document.getElementById('f-showhidden').checked;
+  // Multi-term = AND, matching Redfin's remarks search. Terms may match different
+  // fields, so "bathsheba fixer" finds a fixer in Bathsheba.
+  var terms=q?q.split(/\s+/):[];
+  return LST.filter(function(l){
+    if(par.length&&par.indexOf(l.parish)<0)return false;
+    if(typ&&l.type!==typ)return false;
+    if(chan&&(!l.distressed||l.distressed.channel!==chan))return false;
+    if(rag&&l.deal.rag!==rag)return false;
+    if(!isNaN(maxp)&&l.price_usd>maxp*1000)return false;
+    if(dist&&!(l.distressed&&l.distressed.is_distressed))return false;
+    if(watch&&!WATCH.has(l.id))return false;
+    if(!showHidden&&HIDDEN.has(l.id))return false;
+    for(var i=0;i<terms.length;i++){if(l._q.indexOf(terms[i])<0)return false;}
+    return true;
+  });
+}
+// Count of ACTIVE narrowing controls - the honest answer to "why am I seeing so few?".
+function activeFilterCount(){
+  var n=0;
+  if(selVals(fp).length)n++;
+  ['f-type','f-chan','f-rag','f-price'].forEach(function(id){if(document.getElementById(id).value)n++;});
+  ['f-distressed','f-watch'].forEach(function(id){if(document.getElementById(id).checked)n++;});
+  if((document.getElementById('f-q').value||'').trim())n++;
+  return n;
+}
+var countTimer=null;
+function renderCount(f){
+  var el=document.getElementById('f-count'), n=activeFilterCount(),
+      hid=document.getElementById('f-showhidden').checked?0:HIDDEN.size;
+  el.innerHTML='<b>'+f.length.toLocaleString()+'</b> of '+LST.length.toLocaleString()+' listings'+
+    (n?' · '+n+' filter'+(n===1?'':'s')+' active':'')+
+    (hid?' · '+hid+' hidden':'');
+  document.getElementById('f-clear').hidden=!n;
+  // The ONE place a timer belongs. The filter stays instant; only the ANNOUNCEMENT is
+  // debounced ~1.4s, so a screen reader isn't talked over by its own typing echo -
+  // GOV.UK's accessible-autocomplete uses the same 1400ms for exactly this reason.
+  if(countTimer)clearTimeout(countTimer);
+  countTimer=setTimeout(function(){
+    document.getElementById('f-count-live').textContent=
+      f.length+' of '+LST.length+' listings match the current filters';
+  },1400);
+}
+function med(a){if(!a.length)return null;a=a.slice().sort(function(x,y){return x-y});var m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function renderKPIs(f){
+  var greens=f.filter(function(l){return l.deal.rag==='green'});
+  var ambers=f.filter(function(l){return l.deal.rag==='amber'});
+  var gp=greens.map(function(l){return l.deal.profit_base_usd;});
+  var gd=greens.map(function(l){return l.deal.discount_to_arv_pct;});
+  var k=[['Pipeline',f.length,'listings in view'],
+    ['Green — pass base + stress',greens.length,'≥ $50k AND ≥ 20% ROI, survives stress'],
+    ['Amber — base only',ambers.length,'clears both floors, fails stress'],
+    ['Median discount (green)',(gd.length?med(gd).toFixed(0)+'%':'—'),'to ARV'],
+    ['Avg profit (green)',(gp.length?U(gp.reduce(function(a,b){return a+b},0)/gp.length):'—'),'per deal']];
+  document.getElementById('kpis').innerHTML=k.map(function(x){return '<div class="kpi"><div class="lab">'+x[0]+'</div><div class="val">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>';}).join('');
+}
+// Default to annualised ROI, not absolute profit. Above the $50k floor, capital is
+// the binding constraint, not time - and the biggest absolute profit is often just
+// the biggest cheque, tying up 10x the capital for a thinner margin. It must be the
+// ANNUALISED figure rather than simple margin because HOLDING_MONTHS spans 4-8
+// months across reno tiers, so simple margin isn't comparable across them. Profit
+// stays a sortable column, and the quadrant view shows both at once - the final
+// call is human. See research/06 §2.
+var sortKey='roiann',sortDir=-1;
+var COLS=[['watch','★',0],['title','Listing',0],['parish','Parish',0],['type','Type',0],['price_usd','Price',1],['arv','ARV',1],['reno','Reno',1],['profit','Profit',1],['roiann','ROI/yr%',1],['disc','Disc%',1],['rag','Status',0]];
+function rowVal(l,k){var d=l.deal;
+  if(k==='watch')return WATCH.has(l.id)?1:0;
+  if(k==='price_usd')return l.price_usd; if(k==='arv')return d.arv_usd||-1; if(k==='reno')return d.reno_cost_usd==null?-1:d.reno_cost_usd;
+  if(k==='profit')return d.profit_base_usd==null?-1e12:d.profit_base_usd; if(k==='roiann')return d.roi_annual_pct==null?-1e12:d.roi_annual_pct;
+  if(k==='disc')return d.discount_to_arv_pct==null?-1e12:d.discount_to_arv_pct;
+  if(k==='rag')return({unknown:-1,red:0,amber:1,green:2})[d.rag]; return (l[k]||'').toString().toLowerCase();}
+function renderTable(f){
+  var th=document.querySelector('#tbl thead'), tb=document.querySelector('#tbl tbody');
+  th.innerHTML='<tr>'+COLS.map(function(c){return '<th class="'+(c[2]?'num':'')+'" data-k="'+c[0]+'">'+c[1]+(sortKey===c[0]?(sortDir<0?' ▾':' ▴'):'')+'</th>';}).join('')+'</tr>';
+  var all=f.slice().sort(function(a,b){var x=rowVal(a,sortKey),y=rowVal(b,sortKey);return (x<y?-1:x>y?1:0)*sortDir;});
+  // Render only the top slice. The table is SORTED, so with 2,940 rows the tail is
+  // unreachable by any realistic scroll and exists only to cost time: measured at
+  // 500.9ms to build, on every filter change. Screening reads the top of a ranked list
+  // and narrows; it does not scroll to row 2,900. The cap is announced below the table
+  // rather than silently truncating - a hidden cap would read as "that's all there is",
+  // which is exactly the scoped-search failure NN/g warns about.
+  var TABLE_CAP=250, rows=all.slice(0,TABLE_CAP);
+  tb.innerHTML=rows.map(function(l){var d=l.deal;return '<tr data-id="'+esc(l.id)+'" class="'+(HIDDEN.has(l.id)?'seen':'')+'">'+
+    '<td><button class="star'+(WATCH.has(l.id)?' on':'')+'" data-star="'+esc(l.id)+'" aria-label="toggle watchlist" title="watchlist">'+(WATCH.has(l.id)?'★':'☆')+'</button>'+'<button class="hidebtn" data-hide="'+esc(l.id)+'" aria-label="'+(HIDDEN.has(l.id)?'restore listing':'hide listing')+'" title="'+(HIDDEN.has(l.id)?'restore':'rule out / hide')+'">'+(HIDDEN.has(l.id)?'↺':'✕')+'</button></td>'+
+    '<td>'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</td>'+
+    '<td>'+esc(l.parish)+'</td><td>'+esc((l.type||'').replace(/_/g,' '))+'</td>'+
+    '<td class="num">'+U(l.price_usd)+'</td><td class="num">'+U(d.arv_usd)+'</td><td class="num">'+U(d.reno_cost_usd)+'</td>'+
+    '<td class="num">'+U(d.profit_base_usd)+'</td><td class="num">'+PC(d.roi_annual_pct)+'</td><td class="num">'+PC(d.discount_to_arv_pct)+'</td>'+
+    '<td><span class="pill '+d.rag+'">'+d.rag+'</span> <span class="chan">'+((l.distressed&&l.distressed.channel!=='none')?esc(l.distressed.channel.replace(/_/g,' ')):'')+'</span></td></tr>';}).join('');
+  var capEl=document.getElementById('tbl-cap');
+  if(capEl){capEl.textContent=all.length>TABLE_CAP
+    ? 'Showing the top '+TABLE_CAP+' of '+all.length.toLocaleString()+' matching listings, by '+
+      (COLS.filter(function(c){return c[0]===sortKey;})[0]||['','this column'])[1]+
+      ' — narrow the filters or search to see the rest.'
+    : '';}
+  Array.prototype.forEach.call(th.querySelectorAll('th'),function(h){h.onclick=function(){var k=h.getAttribute('data-k');if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}render();};});
+  Array.prototype.forEach.call(tb.querySelectorAll('button.star'),function(b){b.onclick=function(ev){ev.stopPropagation();var id=b.getAttribute('data-star');if(WATCH.has(id))WATCH.delete(id);else WATCH.add(id);saveWatch();render();};});
+  Array.prototype.forEach.call(tb.querySelectorAll('button.hidebtn'),function(b){b.onclick=function(ev){ev.stopPropagation();var id=b.getAttribute('data-hide');if(HIDDEN.has(id))HIDDEN.delete(id);else HIDDEN.add(id);saveHidden();render();};});
+  Array.prototype.forEach.call(tb.querySelectorAll('tr'),function(tr){tr.onclick=function(){var id=tr.getAttribute('data-id');focusListing(id,tr);openDetail(id);};});
+}
+// preferCanvas: circleMarkers render onto ONE canvas instead of ~2,940 individual
+// SVG nodes. Measured before this: applyLayer(2,940 pins) = 491.6ms.
+var map=L.map('map',{scrollWheelZoom:true,preferCanvas:true}).setView([13.16,-59.55],11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+var markerLayer=L.layerGroup().addTo(map), heatLayer=null, parishLayer=null, curLayer='markers', markerById={}, layerGen=0;
+function hashJitter(id){var h=0,s=String(id);for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}
+  return [((h%1000)/1000-0.5)*0.02, ((Math.floor(h/1000)%1000)/1000-0.5)*0.02];}
+function coords(l){ if(l.lat!=null&&l.lng!=null)return[l.lat,l.lng];
+  var c=pcent[l.parish]; if(!c)return null; var j=hashJitter(l.id); return [c[0]+j[0], c[1]+j[1]]; }
+function metricVal(l,m){var d=l.deal; if(m==='profit')return d.profit_base_usd; if(m==='roi')return d.roi_annual_pct; if(m==='discount')return d.discount_to_arv_pct; if(m==='ppsqft')return l.area_sqft?l.price_usd/l.area_sqft:null; return d.profit_base_usd;}
+function legend(t){document.getElementById('maplegend').textContent=t;}
+function drawMarkers(f){
+  markerLayer.clearLayers();markerById={};
+  f.forEach(function(l){var c=coords(l);if(!c)return;
+    var m=L.circleMarker(c,{radius:8,color:'#0c141d',weight:1,fillColor:COL[l.deal.rag],fillOpacity:.9});
+    // Lazy popup: Leaflet calls this only when the pin is actually opened. Building
+    // ~2,940 popup HTML strings up front to serve the one the user clicks is pure waste.
+    m.bindPopup(function(){return '<b>'+esc(l.title)+'</b><br>'+esc(l.parish)+' • '+esc((l.type||'').replace(/_/g,' '))+'<br>Ask '+U(l.price_usd)+' → ARV '+U(l.deal.arv_usd)+
+      '<br><b>Profit '+U(l.deal.profit_base_usd)+'</b> ('+PC(l.deal.discount_to_arv_pct)+' disc, ROI/yr '+PC(l.deal.roi_annual_pct)+')'+
+      '<br>Status: <b style="color:'+COL[l.deal.rag]+'">'+l.deal.rag.toUpperCase()+'</b><br><i>click pin for details &amp; source</i>';});
+    m.on('click',function(){openDetail(l.id);});
+    m.addTo(markerLayer);markerById[l.id]=m;});
+  legend('Pins: green pass / amber / red fail / grey insufficient data'+(f.some(function(l){return l.lat==null;})?' • pins without coordinates shown near parish centre':''));
+}
+function drawHeat(f){var m=document.getElementById('heatmetric').value;
+  var pts=f.map(function(l){var c=coords(l);var v=metricVal(l,m);return (c&&v!=null)?[c[0],c[1],v]:null;}).filter(Boolean);
+  if(!pts.length){legend('Heat: no data for this metric in view');return;}
+  var vals=pts.map(function(p){return p[2]});
+  var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals),range=(max-min)||1;
+  var norm=pts.map(function(p){return[p[0],p[1],0.15+0.85*((p[2]-min)/range)];});
+  heatLayer=L.heatLayer(norm,{radius:35,blur:25,maxZoom:13,gradient:{0.2:'#3a6',0.5:'#fd3',0.8:'#f83',1:'#e33'}}).addTo(map);
+  legend('Heat: '+document.querySelector('#heatmetric option:checked').textContent+' — relative within current view (brighter = higher)');
+}
+function ppsqftColor(v){ if(v==null)return '#33455a'; var t=Math.min(1,Math.max(0,(v-150)/(360-150)));
+  var r=Math.round(47+t*(229-47)),g=Math.round(191+t*(87-191)),b=Math.round(113+t*(63-113));return 'rgb('+r+','+g+','+b+')';}
+function mkParishLayer(gj){
+  return L.geoJSON(gj,{style:function(ft){var nm=ft.properties.shapeName; var pp=(P.find(function(x){return x.name===nm})||{}).median_ppsqft_usd;
+    return{color:'#0c141d',weight:1,fillColor:ppsqftColor(pp),fillOpacity:.55};},
+    onEachFeature:function(ft,ly){var nm=ft.properties.shapeName;var p=P.find(function(x){return x.name===nm})||{};
+      ly.bindPopup('<b>'+esc(nm)+'</b>'+(p.is_target?' ★ target':'')+'<br>Median $/sqft: '+(p.median_ppsqft_usd||'n/a')+(p.txn_share_2025?'<br>2025 txn share: '+p.txn_share_2025+'%':'')+(p.notes?'<br><i style="font-size:11px">'+esc(p.notes)+'</i>':''));}
+  });
+}
+function drawParish(){
+  legend('Parish median $/sqft (green=low → red=high). ★ = target parish');
+  if(window.BBGEO){parishLayer=mkParishLayer(window.BBGEO);parishLayer.addTo(map);return;}
+  var gen=layerGen;   // guard the async fallback against layer switches
+  fetch('https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/BRB/ADM1/geoBoundaries-BRB-ADM1_simplified.geojson')
+    .then(function(r){return r.json()}).then(function(gj){
+      if(gen!==layerGen||curLayer!=='parish')return;
+      parishLayer=mkParishLayer(gj);parishLayer.addTo(map);
+    }).catch(function(){
+      if(gen!==layerGen||curLayer!=='parish')return;
+      parishLayer=L.layerGroup();P.forEach(function(p){L.circleMarker(p.centroid,{radius:16,color:'#0c141d',weight:1,fillColor:ppsqftColor(p.median_ppsqft_usd),fillOpacity:.6})
+        .bindPopup('<b>'+esc(p.name)+'</b>'+(p.is_target?' ★ target':'')+'<br>Median $/sqft: '+(p.median_ppsqft_usd||'n/a')).addTo(parishLayer);});parishLayer.addTo(map);
+    });
+}
+function applyLayer(f){
+  layerGen++;
+  if(heatLayer){map.removeLayer(heatLayer);heatLayer=null;}
+  if(parishLayer){map.removeLayer(parishLayer);parishLayer=null;}
+  markerLayer.clearLayers(); legend('');
+  if(curLayer==='markers'){drawMarkers(f);}
+  else if(curLayer==='heat'){drawHeat(f);} else{drawParish();}
+}
+function focusListing(id,tr){var lst=LST.filter(function(x){return x.id===id})[0]; if(!lst)return;
+  Array.prototype.forEach.call(document.querySelectorAll('#tbl tr'),function(r){r.classList.remove('sel');}); if(tr)tr.classList.add('sel');
+  if(curLayer!=='markers'){curLayer='markers';setSeg('markers');applyLayer(getFiltered());}
+  var m=markerById[id]; if(m){map.setView(m.getLatLng(),14);m.openPopup();}}
+function placeholderImg(l,i){
+  var pal={house:'#2b6cb0',townhouse:'#2f855a',condo:'#6b46c1',multi_unit:'#b7791f',apartment:'#2c7a7b',land:'#7b341e',commercial:'#4a5568'};
+  var c=pal[l.type]||'#334155';
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="240" height="150"><rect width="240" height="150" fill="'+c+'"/>'+
+    '<text x="12" y="26" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="700">'+esc((l.type||'').replace(/_/g,' '))+'</text>'+
+    '<text x="120" y="82" fill="#ffffff" opacity="0.75" font-family="sans-serif" font-size="12" text-anchor="middle">photo placeholder '+i+'</text>'+
+    '<text x="12" y="136" fill="#ffffff" font-family="sans-serif" font-size="11">'+esc(l.parish+(l.locality?' - '+l.locality:''))+'</text></svg>';
+  return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+}
+function imagesFor(l){ var real=(l.images||[]).map(safeUrl).filter(Boolean);
+  return real.length?real:[1,2,3].map(function(i){return placeholderImg(l,i);}); }
+var lastFocus=null;
+function openDetail(id){
+  var l=LST.filter(function(x){return x.id===id})[0]; if(!l)return; var d=l.deal;
+  curGalleryImgs=imagesFor(l);
+  var imgs=curGalleryImgs.map(function(u,i){return '<img src="'+esc(u)+'" alt="" onclick="openLightbox('+i+')">';}).join('');
+  // numeric-assumed fields are coerced (+x) so a hostile string from a scraper can never reach innerHTML
+  var priceLine=l.price_usd==null?U(l.price_usd)+' — price TBD at auction'
+    :U(l.price_usd)+' (BBD '+(+l.price_bbd||(+l.price_usd||0)*2).toLocaleString()+')';
+  if(+l.price_original_usd>+l.price_usd){
+    priceLine+=' <span style="color:var(--green)">↓'+Math.round((1-l.price_usd/l.price_original_usd)*100)+'% from '+U(l.price_original_usd)+'</span>';
+  }
+  var rows=[['Parish',esc(l.parish)+(l.locality?' — '+esc(l.locality):'')],['Type',esc((l.type||'').replace(/_/g,' '))+(+l.units>0?' • '+(+l.units)+' units':'')],
+    ['Beds / Baths',(l.beds!=null?esc(String(+l.beds)):'—')+' / '+(l.baths!=null?esc(String(+l.baths)):'—')],
+    ['Area',(+l.area_sqft>0?(+l.area_sqft).toLocaleString()+' sqft':'—')],
+    ['Asking',priceLine],
+    ['Days on market',(l.days_on_market!=null&&isFinite(+l.days_on_market)?+l.days_on_market:'—')],
+    ['Est. resale (ARV) <span title="Estimated from comparable ASKING prices, not sold prices. Barbados has no MLS, no public land-price registry and no house-price index — verified 2026-07-16, the Central Bank&#39;s own house-price index is built the same way (research/07). Treat ARV as an asking-price proxy, not a valuation." style="color:var(--mut);cursor:help">&#9432;</span>',U(d.arv_usd)+(d.arv_method?' <span style="color:var(--mut)">('+esc(d.arv_method)+')</span>':'')],
+    ['Renovation',U(d.reno_cost_usd)+' ('+esc(d.reno_intensity)+')'],
+    ['Max Allowable Offer',(d.mao_usd!=null&&d.mao_usd<=0)?'none — no price clears $50k':U(d.mao_usd)],
+    ['Projected profit',U(d.profit_base_usd)+' (stress '+U(d.profit_stress_usd)+')'],
+    ['ROI (annualised)',PC(d.roi_pct)+' ('+PC(d.roi_annual_pct)+'/yr)'],
+    ['Discount to ARV',PC(d.discount_to_arv_pct)],['Listing status',esc(l.status)]];
+  var rentRows='';
+  if(l.monthly_rent_usd){
+    var rentTag=l.rent_method==='comp_model'?' (comp-based estimate)':l.rent_method==='manual_estimate'?' (rent is an estimate)':'';
+    var opexPct=Math.round((CFG.MGMT+CFG.VAC+CFG.MAINT_INS)*100);
+    rentRows='<div class="dsec">Investor / rental view'+rentTag+'</div>'+
+      [['Est. monthly rent',U(l.monthly_rent_usd)],
+       ['Gross yield on all-in cost',PC(d.gross_yield_on_cost_pct)],
+       ['NOI (after '+opexPct+'% opex)',U(d.noi_usd)+'/yr'],
+       ['Value to a yield buyer @ '+(CFG.CAP*100).toFixed(1)+'% cap',U(d.investor_value_usd)],
+       ['Qualifying rent for a mortgage @ '+(d.rent_haircut_pct==null?'—':d.rent_haircut_pct+'%'),U(d.qualifying_rental_income_usd)],
+       ['Rental fallback covers debt',d.rental_fallback_ok==null?'—':(d.rental_fallback_ok?'yes':'NO')]]
+      .map(function(r){return '<div class="drow"><span class="k">'+r[0]+'</span><span>'+r[1]+'</span></div>';}).join('');
+  }
+  var chan=(l.distressed&&l.distressed.channel&&l.distressed.channel!=='none')?l.distressed.channel.replace(/_/g,' '):'standard listing';
+  var sig=(l.distressed&&l.distressed.signals&&l.distressed.signals.length)?l.distressed.signals.map(esc).join(', '):'—';
+  var srcName=esc(l.source_name||l.source||'unknown source');
+  var link=safeUrl(l.url);
+  var srcLink=link?('<a class="srcbtn" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">View original listing ↗</a>'):
+    ('<div style="color:var(--mut);font-size:12px;margin-top:8px">Off-market / no public URL — sourced via '+srcName+'. Approach the channel directly.</div>');
+  var verdict=(d.rag==='green'?'✓ PASS — clears $50k + 20% ROI + stress':d.rag==='amber'?'~ MARGINAL — clears both floors, fails stress':d.rag==='unknown'?'? INSUFFICIENT DATA — '+d.flags.map(esc).join(', '):failReason(d));
+  var html='<div class="dhead"><div><h2>'+esc(l.title)+(l.is_real_comp?'<span class="comp" title="Reference comp — scored as-if purchased at asking">COMP</span>':'')+'</h2><div style="color:var(--mut);font-size:12px;margin-top:2px">'+esc(chan)+'</div></div>'+
+    '<button class="close" id="drawer-close" aria-label="Close details">×</button></div>'+
+    '<div class="body"><div class="gallery">'+imgs+'</div>'+
+    '<div class="verdictbig" style="background:'+COL[d.rag]+'22;color:'+COL[d.rag]+';border:1px solid '+COL[d.rag]+'">'+verdict+'</div>'+
+    rows.map(function(r){return '<div class="drow"><span class="k">'+r[0]+'</span><span>'+r[1]+'</span></div>';}).join('')+
+    '<div class="drow"><span class="k">Distressed signals</span><span>'+sig+'</span></div>'+rentRows+
+    '<div class="sourcebox"><div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Where this was found</div>'+
+    '<div style="font-weight:700;margin-top:3px">'+srcName+'</div>'+srcLink+
+    (l.notes?('<div style="color:var(--mut);font-size:11px;margin-top:10px">'+esc(l.notes)+'</div>'):'')+'</div></div>';
+  var dr=document.getElementById('detail'); dr.innerHTML=html;
+  dr.setAttribute('aria-label',l.title);
+  dr.classList.add('open'); dr.setAttribute('aria-hidden','false');
+  document.getElementById('overlay').classList.add('open');
+  lastFocus=document.activeElement;
+  document.getElementById('drawer-close').onclick=closeDetail;
+  document.getElementById('drawer-close').focus();
+  var mk=markerById[id]; if(mk){try{map.setView(mk.getLatLng(),14);}catch(e){}}
+}
+function closeDetail(){var dr=document.getElementById('detail');dr.classList.remove('open');dr.setAttribute('aria-hidden','true');document.getElementById('overlay').classList.remove('open');
+  if(lastFocus&&lastFocus.focus){try{lastFocus.focus();}catch(e){}} lastFocus=null;}
+document.getElementById('overlay').addEventListener('click',closeDetail);
+var curGalleryImgs=[],lbIndex=0,lbLastFocus=null;
+function updateLightboxImg(){
+  var n=curGalleryImgs.length; if(!n)return;
+  document.getElementById('lb-img').src=curGalleryImgs[lbIndex];
+  document.getElementById('lb-count').textContent=(lbIndex+1)+' / '+n;
+  var single=n<2;
+  document.getElementById('lb-prev').style.display=single?'none':'';
+  document.getElementById('lb-next').style.display=single?'none':'';
+}
+function openLightbox(i){
+  if(!curGalleryImgs.length)return;
+  lbIndex=((i%curGalleryImgs.length)+curGalleryImgs.length)%curGalleryImgs.length;
+  updateLightboxImg();
+  var lb=document.getElementById('lightbox');
+  lb.classList.add('open'); lb.setAttribute('aria-hidden','false');
+  lbLastFocus=document.activeElement;
+  document.getElementById('lb-close').focus();
+}
+function closeLightbox(){
+  var lb=document.getElementById('lightbox');
+  lb.classList.remove('open'); lb.setAttribute('aria-hidden','true');
+  if(lbLastFocus&&lbLastFocus.focus){try{lbLastFocus.focus();}catch(e){}} lbLastFocus=null;
+}
+function lbPrev(){if(curGalleryImgs.length<2)return; lbIndex=(lbIndex-1+curGalleryImgs.length)%curGalleryImgs.length; updateLightboxImg();}
+function lbNext(){if(curGalleryImgs.length<2)return; lbIndex=(lbIndex+1)%curGalleryImgs.length; updateLightboxImg();}
+document.getElementById('lb-close').addEventListener('click',closeLightbox);
+document.getElementById('lb-prev').addEventListener('click',lbPrev);
+document.getElementById('lb-next').addEventListener('click',lbNext);
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target.id==='lightbox')closeLightbox();});
+document.addEventListener('keydown',function(e){
+  var dr=document.getElementById('detail');
+  var lb=document.getElementById('lightbox');
+  if(lb.classList.contains('open')){
+    if(e.key==='Escape'){closeLightbox();return;}
+    if(e.key==='ArrowLeft'){lbPrev();return;}
+    if(e.key==='ArrowRight'){lbNext();return;}
+    if(e.key==='Tab'){   // keep focus inside the lightbox while it's open
+      var lf=[document.getElementById('lb-close'),document.getElementById('lb-prev'),document.getElementById('lb-next')]
+        .filter(function(b){return b.style.display!=='none';});
+      var first=lf[0],last=lf[lf.length-1];
+      if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+      else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+    }
+    return;
+  }
+  if(e.key==='Escape'){closeDetail();return;}
+  if(e.key==='Tab'&&dr.classList.contains('open')){   // keep focus inside the dialog
+    var f=dr.querySelectorAll('button, a[href]');
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+    else if(!dr.contains(document.activeElement)){first.focus();e.preventDefault();}
+  }
+});
+var chart=null;
+function renderChart(f){
+  var rows=f.filter(function(l){return l.deal.profit_base_usd!=null;})
+            .sort(function(a,b){return b.deal.profit_base_usd-a.deal.profit_base_usd;}).slice(0,14);
+  var ctx=document.getElementById('chart').getContext('2d');
+  var cfg={type:'bar',data:{labels:rows.map(function(l){return (l.locality||l.parish.replace('Saint','St'))+' '+Uk(l.price_usd);}),
+      datasets:[{data:rows.map(function(l){return l.deal.profit_base_usd;}),backgroundColor:rows.map(function(l){return COL[l.deal.rag];})}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return U(c.raw);},title:function(c){return rows[c[0].dataIndex].title;}}}},
+      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#93a4b8',callback:function(v){return Uk(v);}},grid:{color:'#22303f'}}},
+      responsive:true,maintainAspectRatio:false}};
+  if(chart)chart.destroy(); chart=new Chart(ctx,cfg);
+}
+function runCalc(){
+  var arv=+document.getElementById('c-arv').value,price=+document.getElementById('c-price').value,
+      area=+document.getElementById('c-area').value,reno=document.getElementById('c-reno').value,
+      fin=document.getElementById('c-fin').checked,rent=+document.getElementById('c-rent').value||null,
+      tenanted=document.getElementById('c-tenanted').checked,
+      haircut=tenanted?CFG.HAIRCUT_TENANTED:CFG.HAIRCUT_VACANT;
+  var d=scoreDeal(arv,price,area,reno,fin,rent,haircut);
+  var out=[['Renovation',U(d.reno_cost_usd)],['Holding',U(d.holding_usd)],['Selling costs',U(d.selling_usd)],['Buying costs',U(d.buying_usd)],
+    ['Max Allowable Offer',U(d.mao_usd)],['Profit (base)',U(d.profit_base_usd)],['Profit (stress)',U(d.profit_stress_usd)],['ROI (annualised)',d.roi_pct==null?'—':(PC(d.roi_pct)+' ('+PC(d.roi_annual_pct)+'/yr)')]];
+  if(rent){
+    out.push(['Gross yield on cost',PC(d.gross_yield_on_cost_pct)]);
+    out.push(['Investor value @ '+(CFG.CAP*100).toFixed(1)+'% cap',U(d.investor_value_usd)]);
+    out.push(['Qualifying rent for a mortgage @ '+d.rent_haircut_pct+'%',U(d.qualifying_rental_income_usd)]);
+  }
+  document.getElementById('c-out').innerHTML=out.map(function(x){return '<div class="b"><div class="l">'+x[0]+'</div><div class="v">'+x[1]+'</div></div>';}).join('');
+  var v=document.getElementById('c-verdict');
+  v.style.background=COL[d.rag]+'22';v.style.color=COL[d.rag];v.style.border='1px solid '+COL[d.rag];
+  v.innerHTML=(d.rag==='green'?'✓ PASS — clears $50k + 20% ROI + stress':d.rag==='amber'?'~ MARGINAL — clears both floors, fails stress':d.rag==='unknown'?'? INSUFFICIENT DATA — fill in '+d.flags.join(', ').replace(/missing_/g,''):failReason(d))+
+    (d.mao_usd==null?'':(d.mao_usd<=0?'<div style="font-size:11px;font-weight:400;margin-top:4px;color:var(--mut)">No purchase price clears the US$50k target for this reno/exit</div>':'<div style="font-size:11px;font-weight:400;margin-top:4px;color:var(--mut)">Offer at or below <b style="color:'+COL[d.rag]+'">'+U(d.mao_usd)+'</b> to hit target</div>'));
+}
+function setSeg(layer){curLayer=layer;Array.prototype.forEach.call(document.querySelectorAll('#layerseg button'),function(b){b.classList.toggle('active',b.getAttribute('data-layer')===layer);});}
+function render(){var f=getFiltered();renderCount(f);renderKPIs(f);renderTable(f);renderChart(f);applyLayer(f);}
+['f-parish','f-type','f-chan','f-rag','f-price','f-distressed','f-watch','f-showhidden'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
+document.getElementById('f-price').addEventListener('input',render);
+// Search DOES debounce - but the render, not the filter, and only after measuring.
+// Measured here (performance.now, this catalogue, 2026-07-15):
+//     getFiltered() with a query ......  1.67ms   <- the search itself is free
+//     renderTable(2,940 rows) .........  500.9ms  <- the real cost
+//     applyLayer(2,940 map pins) ......  491.6ms  <- the real cost
+// The received wisdom "don't debounce a fast client-side filter" reasons only about the
+// filter, and it is right about it. But an early keystroke barely narrows anything - "b"
+// still matches ~2,900 listings - so each one triggers a ~1s full re-render of the table
+// and the Leaflet layer, and typing "bathsheba" would queue nine of them. 120ms sits
+// inside RAIL's 100ms-per-interaction budget for the settled render while collapsing a
+// burst of keystrokes into one. The filter stays instant; only the paint waits.
+// The right long-term fix is to stop rendering 2,940 <tr>s and 2,940 pins nobody scrolls
+// through (that ~1s cost is paid on every filter change today, not just search) - logged
+// rather than smuggled into this change.
+var qTimer=null;
+document.getElementById('f-q').addEventListener('input',function(){
+  if(qTimer)clearTimeout(qTimer);
+  qTimer=setTimeout(render,120);
+});
+function resetFilters(){
+  Array.prototype.forEach.call(fp.options,function(o){o.selected=false;});
+  ['f-type','f-chan','f-rag'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f-price').value='';
+  document.getElementById('f-q').value='';
+  ['f-distressed','f-watch'].forEach(function(id){document.getElementById(id).checked=false;});
+  render();
+}
+document.getElementById('f-reset').onclick=resetFilters;
+document.getElementById('f-clear').onclick=function(){resetFilters();document.getElementById('f-q').focus();};
+
+// Ctrl/Cmd-K, deliberately NOT "/". WCAG 2.1.4 (Character Key Shortcuts, AA) only
+// exempts single-key shortcuts that are active while the component has focus - a global
+// "/" is by definition active when search is unfocused, and F99's failure example is
+// exactly a single-key shortcut opening search with no way to turn it off. GitHub ships
+// "/" only alongside a disable setting; a modifier chord needs no such escape hatch.
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){
+    e.preventDefault();var q=document.getElementById('f-q');q.focus();q.select();
+  }
+});
+
+// CSV of the filtered set. Quotes every field and doubles embedded quotes, so titles
+// containing commas/quotes can't shift columns. BOM so Excel reads UTF-8 (Barbadian
+// place names carry accents/curly apostrophes).
+document.getElementById('f-csv').onclick=function(){
+  var rows=getFiltered(), cols=[
+    ['id','id'],['title','title'],['parish','parish'],['type','type'],
+    ['price_usd','price_usd'],['beds','beds'],['baths','baths'],['area_sqft','area_sqft'],
+    ['status','status'],['channel',function(l){return (l.distressed&&l.distressed.channel)||'';}],
+    ['rag',function(l){return l.deal.rag;}],['arv_usd',function(l){return l.deal.arv_usd;}],
+    ['reno_intensity',function(l){return l.deal.reno_intensity;}],
+    ['reno_scope_method',function(l){return l.deal.reno_scope_method||'';}],
+    ['profit_base_usd',function(l){return l.deal.profit_base_usd;}],
+    ['roi_pct',function(l){return l.deal.roi_pct;}],
+    ['roi_annual_pct',function(l){return l.deal.roi_annual_pct;}],
+    ['discount_to_arv_pct',function(l){return l.deal.discount_to_arv_pct;}],
+    ['days_on_market','days_on_market'],['source_name','source_name'],['url','url']
+  ];
+  function cell(l,c){var v=typeof c[1]==='function'?c[1](l):l[c[1]];
+    if(v===null||v===undefined)v='';
+    return '"'+String(v).replace(/"/g,'""')+'"';}
+  var csv=cols.map(function(c){return '"'+c[0]+'"';}).join(',')+'\r\n'+
+    rows.map(function(l){return cols.map(function(c){return cell(l,c);}).join(',');}).join('\r\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='investment-property-dashboard-'+(DATA.generated_at||'export')+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(a.href);},0);
+};
+Array.prototype.forEach.call(document.querySelectorAll('#layerseg button'),function(b){b.onclick=function(){setSeg(b.getAttribute('data-layer'));applyLayer(getFiltered());};});
+document.getElementById('heatmetric').addEventListener('change',function(){if(curLayer==='heat')applyLayer(getFiltered());});
+Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(t){t.onclick=function(){Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(x){x.classList.remove('active');});t.classList.add('active');document.getElementById('pane-filters').style.display=t.getAttribute('data-pane')==='filters'?'':'none';document.getElementById('pane-calc').style.display=t.getAttribute('data-pane')==='calc'?'':'none';};});
+['c-arv','c-price','c-area','c-reno','c-fin','c-rent','c-tenanted'].forEach(function(id){document.getElementById(id).addEventListener('input',runCalc);document.getElementById(id).addEventListener('change',runCalc);});
+document.getElementById('foot').innerHTML='<b>Data:</b> '+(DATA.seed?'SEED / illustrative — 6 REAL asking-price comps (marked COMP) + 8 CONSTRUCTED distressed examples at plausible channel discounts. Replace with scraped data (<code>scrapers/refresh.py</code>).':'live')+' Generated '+esc(DATA.generated_at||'—')+'. <b>Model:</b> selling = exact PTT (2.5% over US$75k = BBD 150k exempt) + stamp 1% + agent 5.9% incl VAT + legal 1.76% (~10.4% at a $250k exit); reno $40/$75/$130 per sqft (+17% contingency; cosmetic = researched band floor — treat green as a screen, get a QS quote); holding $1,600/mo × 4/6/8; target ≥ US$50k; stress = ARV −10%, reno +20%, +3 months (incl. interest). GREY = insufficient data (never a confident green on missing inputs). No CGT in Barbados. BBD = USD × 2. See <code>docs/02-deal-economics-model.md</code>.';
+render();runCalc();
+
+// === Market Trends (historical, from scrapers/market_stats.py snapshots) ===
+var MKT=((window.BBMARKET||{}).history)||[];
+var trendsRendered=false,trendChart1=null,trendChart2=null;
+document.getElementById('trends').addEventListener('toggle',function(e){
+  if(e.target.open&&!trendsRendered){trendsRendered=true;renderTrends();}
+});
+function trendDelta(cur,prevVal){
+  if(prevVal==null||cur==null)return '';
+  var d=cur-prevVal; if(Math.abs(d)<0.05)return ' <span style="color:var(--mut);font-size:11px">flat</span>';
+  return ' <span style="color:var(--mut);font-size:11px">'+(d>0?'▲':'▼')+esc(Math.abs(Math.round(d*10)/10))+' vs prior</span>';
+}
+function renderTrends(){
+  var body=document.getElementById('trends-body');
+  if(!MKT.length){
+    body.innerHTML='<div class="trendempty">No snapshots yet — each scheduled pipeline run adds one dated snapshot. Check back after the next weekly refresh.</div>';
+    return;
+  }
+  var latest=MKT[MKT.length-1],prev=MKT.length>1?MKT[MKT.length-2]:null;
+  var kpis=[
+    ['Active sale listings',latest.total_active_sale_listings,prev&&prev.total_active_sale_listings],
+    ['Active rental listings',latest.total_active_rental_listings,prev&&prev.total_active_rental_listings],
+    ['Median asking price',latest.median_price_usd,prev&&prev.median_price_usd,U],
+    ['Avg days on market',latest.avg_days_on_market,prev&&prev.avg_days_on_market],
+  ];
+  body.innerHTML=
+    '<div class="trendkpis">'+kpis.map(function(k){var fmt=k[3]||function(v){return v==null?'—':v;};
+      return '<div class="kpi"><div class="lab">'+k[0]+'</div><div class="val">'+fmt(k[1])+'</div>'+
+        '<div class="sub">'+trendDelta(k[1],k[2])+'</div></div>';}).join('')+'</div>'+
+    '<div class="grid2">'+
+      '<div class="card"><h3>Active listings over time</h3><div class="chartbox"><canvas id="trendchart1"></canvas></div></div>'+
+      '<div class="card"><h3>Deal quality mix over time <span style="color:var(--mut);font-weight:400;text-transform:none">— how many listings clear the $50k filter</span></h3><div class="chartbox"><canvas id="trendchart2"></canvas></div></div>'+
+    '</div>'+
+    '<details class="trendtbl"><summary style="cursor:pointer;color:var(--mut)">Show snapshot data table ('+MKT.length+' date(s))</summary>'+
+      '<table><thead><tr><th>Date</th><th>Active sales</th><th>Active rentals</th><th>Median price</th><th>Median $/sqft</th><th>Avg DOM</th><th>% distressed</th><th>Green deals</th></tr></thead><tbody>'+
+      MKT.slice().reverse().map(function(h){return '<tr><td>'+esc(h.date)+'</td><td>'+(h.total_active_sale_listings??'—')+'</td><td>'+(h.total_active_rental_listings??'—')+
+        '</td><td>'+U(h.median_price_usd)+'</td><td>'+U(h.median_ppsqft_usd)+'</td><td>'+(h.avg_days_on_market??'—')+'</td><td>'+PC(h.pct_distressed)+'</td><td>'+((h.rag_counts&&h.rag_counts.green)??'—')+'</td></tr>';}).join('')+
+      '</tbody></table></details>';
+
+  var labels=MKT.map(function(h){return h.date;});
+  var ctx1=document.getElementById('trendchart1').getContext('2d');
+  if(trendChart1)trendChart1.destroy();
+  trendChart1=new Chart(ctx1,{type:'line',data:{labels:labels,datasets:[
+      {label:'Active sale listings',data:MKT.map(function(h){return h.total_active_sale_listings;}),borderColor:'#4aa3ff',backgroundColor:'#4aa3ff',tension:.25},
+      {label:'Active rental listings',data:MKT.map(function(h){return h.total_active_rental_listings;}),borderColor:'#f0a83c',backgroundColor:'#f0a83c',tension:.25}
+    ]},options:{plugins:{legend:{labels:{color:'#93a4b8'}}},
+      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#93a4b8'},grid:{color:'#22303f'}}},
+      responsive:true,maintainAspectRatio:false}});
+
+  if(trendChart2)trendChart2.destroy();
+  var ctx2=document.getElementById('trendchart2').getContext('2d');
+  var ragKeys=[['green','#2fbf71'],['amber','#f0a83c'],['red','#e5573f'],['unknown','#8899aa']];
+  trendChart2=new Chart(ctx2,{type:'line',data:{labels:labels,datasets:ragKeys.map(function(rk){return {
+      label:rk[0],data:MKT.map(function(h){return (h.rag_counts&&h.rag_counts[rk[0]])||0;}),
+      borderColor:rk[1],backgroundColor:rk[1]+'55',fill:true,stack:'rag',tension:.2,pointRadius:2};})},
+    options:{plugins:{legend:{labels:{color:'#93a4b8'}}},
+      scales:{x:{ticks:{color:'#93a4b8',font:{size:10}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{color:'#93a4b8'},grid:{color:'#22303f'}}},
+      responsive:true,maintainAspectRatio:false}});
+}
+</script>
+</body>
+</html>
